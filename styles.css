@@ -159,3 +159,53 @@ td select{font:inherit;font-size:14px;border:1px solid var(--line2);border-radiu
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--gold-l);font-size:14px;font-weight:500;padding:10px 16px;border-radius:12px;z-index:40;max-width:calc(100% - 32px)}
 .offline{background:var(--ink);color:var(--gold-l);font-size:13px;text-align:center;padding:6px 12px}
+
+/* ---------- Étape 2 ---------- */
+.nav{order:3;width:100%}
+@media (min-width:900px){.nav{order:3;width:100%}}
+.daynav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.daynav b{font-family:var(--f-title);font-size:20px;min-width:12ch;text-align:center}
+.daynav b::first-letter{text-transform:uppercase}
+.iconbtn{appearance:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:#fff;color:var(--ink);font-size:18px;cursor:pointer}
+.iconbtn:hover{border-color:var(--ink)}
+.banner{background:var(--ink);color:#FFF8EC;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.banner .k{font-size:13px;color:var(--gold-l);font-weight:700}
+.banner .v{font-family:var(--f-title);font-size:24px;font-weight:700}
+.banner .s{font-size:13px;color:#D9CBB6}
+.tile{position:relative}
+.tile .count{position:absolute;top:10px;right:10px;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--bad);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.qty{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.qty label{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 10px;font-size:14px;min-width:0}
+.qty label .sw{flex:0 0 12px;width:12px}
+.qty label span:not(.sw){flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty input{width:64px;min-height:40px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:16px;text-align:center;background:#fff}
+.sw{width:12px;height:12px;border-radius:3px;flex:0 0 12px;border:1px solid rgba(0,0,0,.15);display:inline-block}
+.envoi{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fff}
+.envoi.hot{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}
+.envoi-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.envoi-h b{font-size:16px}
+.envoi .meta{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+.chip b{font-variant-numeric:tabular-nums}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.steps span{font-size:11.5px;padding:3px 8px;border-radius:999px;background:var(--cream);color:var(--muted)}
+.steps span.done{background:var(--good-bg);color:var(--good)}
+.steps span.now{background:var(--ink);color:var(--gold-l);font-weight:700}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inline-sel{font:inherit;font-size:14px;border:1px solid var(--line2);border-radius:10px;min-height:40px;padding:0 8px;background:#fff;max-width:100%}
+.ptable td input{width:70px;min-height:40px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:16px;text-align:center}
+.ptable{min-width:520px}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.week button{appearance:none;border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 4px;font:inherit;font-size:12.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text)}
+.week button b{font-family:var(--f-title);font-size:18px;color:var(--ink)}
+.week button[aria-current="date"]{border-color:var(--ink);background:var(--gold-bg)}
+.parfums{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.parfum{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.parfum .bandeau{height:44px}
+.parfum .in{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.parfum.off .bandeau{opacity:.35}
+.total{font-weight:700;background:var(--bg)}
+
+.ptable td input{width:58px}
+@media (max-width:480px){.ptable{min-width:440px}.ptable th,.ptable td{padding:8px 4px}}
