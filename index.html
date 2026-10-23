@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Comptoir du Flan · Équipe</title>
+<meta name="description" content="Outil interne de l'équipe du Comptoir du Flan.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#141414">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Comptoir du Flan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="offline" id="offline" hidden>Hors connexion : consultation seule.</div>
+
+<!-- Connexion / activation -->
+<section class="auth" id="auth" hidden>
+  <div class="auth-side">
+    <div class="auth-logo"><img src="icons/logo.png" alt="Le Comptoir du Flan"></div>
+    <div class="auth-tag">Produire juste.<br>Vendre mieux.</div>
+    <p class="auth-sub">L'outil interne de l'équipe : production, ventes, stocks et prévisions.</p>
+  </div>
+  <div class="auth-main">
+    <form id="authForm" novalidate>
+      <div>
+        <h1 id="authTitle">Connexion</h1>
+        <p class="lead" id="authLead">Connecte-toi avec l'adresse donnée par ton responsable.</p>
+      </div>
+      <div class="row2" id="nameRow" hidden>
+        <label class="field">Prénom<input id="aPrenom" autocomplete="given-name"></label>
+        <label class="field">Nom<input id="aNom" autocomplete="family-name"></label>
+      </div>
+      <label class="field">Adresse e-mail<input id="aEmail" type="email" autocomplete="email" placeholder="prenom@exemple.fr"></label>
+      <label class="field" id="pwRow">Mot de passe<input id="aPw" type="password" autocomplete="current-password"><small id="pwHint" hidden>10 caractères minimum.</small></label>
+      <label class="check" id="charteRow" hidden><input type="checkbox" id="aCharte">J'accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l'organisation du travail.</label>
+      <p class="msg err" id="authErr" hidden></p>
+      <p class="msg ok" id="authOk" hidden></p>
+      <button class="btn" type="submit" id="authBtn">Se connecter</button>
+      <div class="links">
+        <button class="link" type="button" id="toActivate">Première connexion ? Activer mon compte</button>
+        <button class="link" type="button" id="toReset">Mot de passe oublié</button>
+      </div>
+    </form>
+    <form id="newPwForm" novalidate hidden>
+      <h1>Nouveau mot de passe</h1>
+      <label class="field">Nouveau mot de passe<input id="newPw" type="password" autocomplete="new-password"><small>10 caractères minimum.</small></label>
+      <p class="msg err" id="newPwErr" hidden></p>
+      <button class="btn" type="submit">Enregistrer</button>
+    </form>
+  </div>
+</section>
+
+<!-- Appli -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in">
+      <a class="brand" href="#accueil"><img src="icons/logo.png" alt=""><span>Comptoir du Flan</span></a>
+      <nav class="nav" id="nav" aria-label="Navigation"></nav>
+      <a class="me" href="#profil" id="me"></a>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<!-- Code PIN -->
+<div class="lock" id="lock" role="dialog" aria-modal="true" aria-labelledby="lockT" hidden>
+  <div class="lockbox">
+    <img src="icons/logo.png" alt="">
+    <h2 id="lockT">Code PIN</h2>
+    <p id="lockS"></p>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="lockmsg" id="lockMsg" role="alert"></div>
+    <div class="pad">
+      <button class="key" type="button" data-key="1">1</button><button class="key" type="button" data-key="2">2</button><button class="key" type="button" data-key="3">3</button>
+      <button class="key" type="button" data-key="4">4</button><button class="key" type="button" data-key="5">5</button><button class="key" type="button" data-key="6">6</button>
+      <button class="key" type="button" data-key="7">7</button><button class="key" type="button" data-key="8">8</button><button class="key" type="button" data-key="9">9</button>
+      <button class="key small" type="button" data-key="del" aria-label="Effacer le dernier chiffre">Effacer</button><button class="key" type="button" data-key="0">0</button><button class="key small ok" type="button" data-key="ok">OK</button>
+    </div>
+    <button class="link" type="button" id="lockAlt"></button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.109.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
