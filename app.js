@@ -33,9 +33,10 @@ const ROLES={
   livreur:{label:'Livreur',short:'Livreur'},
   cm:{label:'Community manager',short:'Community manager'},
   borne:{label:'Borne de pointage (tablette)',short:'Borne'},
+  client:{label:'Client',short:'Client'},
   aucun:{label:'En attente',short:'En attente'}
 };
-const ROLE_KEYS=Object.keys(ROLES).filter(k=>k!=='aucun');
+const ROLE_KEYS=Object.keys(ROLES).filter(k=>k!=='aucun'&&k!=='client');
 const isResp=p=>!!(p&&p.actif&&ROLES[p.role]&&ROLES[p.role].resp);
 const isLabo=p=>!!(p&&p.actif&&(p.role==='chef_patissier'||p.role==='patissier'));
 const roleLabel=r=>(ROLES[r]||ROLES.aucun).label;
@@ -53,13 +54,15 @@ const CAN={
   boutiques:()=>isResp(me)||me.role==='vendeur'||me.role==='livreur',
   journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur',
   labo:()=>isResp(me)||isLabo(me), marges:()=>isResp(me), compta:()=>me.role==='direction',
-  pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne'
+  pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne',
+  commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client'
 };
 function navItems(){
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['equipe','Équipe'],['boutiques','Points de vente']]);
+  if(me.role==='client')return [['commander','Commander'],['mescommandes','Mes commandes'],['profil','Mon profil']];
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['equipe','Équipe'],['boutiques','Points de vente']]);
   if(me.role==='chef_patissier')return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning'],['agenda','Agenda']];
   if(isLabo(me))return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning'],['agenda','Agenda']];
-  if(me.role==='vendeur')return [['accueil','Accueil'],['pointage','Mes heures'],['journee','Ma journée'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
+  if(me.role==='vendeur')return [['accueil','Accueil'],['pointage','Mes heures'],['journee','Ma journée'],['commandes','Commandes'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
   if(me.role==='livreur')return [['accueil','Accueil'],['pointage','Mes heures'],['tournee','Ma tournée'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
   return [['accueil','Accueil'],['pointage','Mes heures'],['planning','Mon planning'],['agenda','Agenda']];
 }
@@ -67,7 +70,7 @@ function navItems(){
 /* ---------- Modules de l'accueil ---------- */
 const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
-  {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes spéciales','Événements, entreprises, acomptes',null,5)]},
+  {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes clients','Flans entiers, retrait à Saint-Lazare','#commandes',null,'commandes')]},
   {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
   {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda')]},
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies')]},
@@ -77,7 +80,7 @@ const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production'
 const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
 const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
-  vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits click & collect',null,5)],
+  vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits de flans entiers','#commandes')],
   livreur:[T('Ma tournée','Envois à livrer','#tournee',null,'tournee'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Points de vente','Adresses et horaires','#boutiques')],
   cm:[T('Mon planning','Mes horaires de la semaine','#planning'),T('Réseaux sociaux','Statistiques et objectifs',null,6),T('Nouvelle publication','Préparer et programmer',null,6),T('Calendrier éditorial','Le mois en un coup d\'œil',null,6)]
 };
@@ -91,7 +94,7 @@ const STEP_LBL={valide:'Validé',pret:'Prêt',en_route:'En route',livre:'Livré'
 let sb=null,user=null,me=null,loaded=false,channel=null;
 let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[],envoisAll=[],cloturesAll=[],calendrier=[];
 let rep={target:null,adj:{},adjTouched:{},qty:{},inc:{},liv:{}},meteo={};
-let mesPointages=[],monPlanning=[];
+let mesPointages=[],monPlanning=[],commandesAll=[],parametres={};
 let lots=[],equipements=[],releves=[],receptions=[],ingredients=[],recettes=[],reglages={},compta=null;
 let route='accueil',day=todayISO(),authMode='login',justLoggedIn=false,recovering=false;
 let ui={editShop:null,addShop:false,lastInvite:null,newEnvoi:false,editParfum:null,addParfum:false};
@@ -137,7 +140,8 @@ const counts=()=>({
   labo:envoisAll.filter(e=>e.statut==='valide'&&(e.jour===todayISO()||e.jour===addDays(todayISO(),1))).length,
   tournee:envois.filter(e=>e.livreur_id===me.id&&e.statut==='pret').length,
   reception:envois.filter(e=>e.statut==='en_route').length,
-  anomalies:0
+  anomalies:0,
+  commandes:commandesAll.filter(c=>c.statut==='nouvelle').length
 });
 function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)}
 const pertesOf=l=>(l.quarts_jetes||0)+(l.quarts_casses||0)+(l.quarts_donnes||0);
@@ -217,16 +221,20 @@ function stockForecast(b,p,target){
 function show(which){$('#auth').hidden=which!=='auth';$('#app').hidden=which!=='app'}
 function setAuthMode(m,okMsg){
   authMode=m;
-  const C={login:['Connexion','Connecte-toi avec l’adresse donnée par ton responsable.','Se connecter'],activate:['Activer mon compte','Utilise l’adresse à laquelle ton responsable t’a invité·e.','Créer mon compte'],reset:['Mot de passe oublié','Tu vas recevoir un lien pour en choisir un nouveau.','Recevoir le lien']}[m];
+  const C={login:['Connexion','Équipe ou client : connecte-toi avec ton adresse e-mail.','Se connecter'],activate:['Activer mon compte','Utilise l’adresse à laquelle ton responsable t’a invité·e.','Créer mon compte'],reset:['Mot de passe oublié','Tu vas recevoir un lien pour en choisir un nouveau.','Recevoir le lien'],client:['Créer mon compte client','Commande tes flans entiers en ligne, retrait en boutique, paiement sur place.','Créer mon compte']}[m];
+  const signup=m==='activate'||m==='client';
   $('#authTitle').textContent=C[0];$('#authLead').textContent=C[1];$('#authBtn').textContent=C[2];
-  $('#nameRow').hidden=m!=='activate';$('#charteRow').hidden=m!=='activate';
-  $('#pwRow').hidden=m==='reset';$('#pwHint').hidden=m!=='activate';
-  $('#aPw').autocomplete=m==='activate'?'new-password':'current-password';
-  $('#toActivate').textContent=m==='login'?'Première connexion ? Activer mon compte':'J’ai déjà un compte';
-  $('#toReset').hidden=m!=='login';
+  $('#nameRow').hidden=!signup;$('#charteRow').hidden=!signup;$('#telRow').hidden=m!=='client';
+  $('#pwRow').hidden=m==='reset';$('#pwHint').hidden=!signup;$('#pwHint').textContent=m==='client'?'8 caractères minimum.':'10 caractères minimum.';
+  $('#charteTxt').textContent=m==='client'?'J’accepte que mes nom, prénom, e-mail et téléphone soient utilisés par le Comptoir du Flan pour gérer mes commandes. Je peux supprimer mon compte à tout moment.':'J’accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l’organisation du travail.';
+  $('#aPw').autocomplete=signup?'new-password':'current-password';
+  $('#toActivate').textContent=m==='login'?'Équipe : première connexion ? Activer mon compte':'J’ai déjà un compte';
+  $('#toReset').hidden=m!=='login';$('#clientCta').hidden=m==='client';
+  $('#authTag').innerHTML=m==='client'?'Le flan,<br>en entier.':'Produire juste.<br>Vendre mieux.';
+  $('#authSub').textContent=m==='client'?'Commande en ligne, retrait en boutique.':'L’outil interne de l’équipe : production, ventes, stocks et prévisions.';
   $('#authErr').hidden=true;const ok=$('#authOk');ok.textContent=okMsg||'';ok.hidden=!okMsg;
 }
-function showAuth(okMsg){show('auth');$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode('login',okMsg)}
+function showAuth(okMsg){show('auth');$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode(!okMsg&&location.hash==='#client'?'client':'login',okMsg)}
 
 /* ---------- Données ---------- */
 async function loadAll(){
@@ -247,7 +255,12 @@ async function loadAll(){
   if(pf.error)toast('Base pas à jour : lance etape2.sql dans Supabase.');
   else if(cal.error)toast('Base pas à jour : lance etape2b.sql dans Supabase.');
   if(isResp(me)){const i=await sb.from('invitations').select('*').order('created_at',{ascending:false});invitations=i.data||[]}else invitations=[];
-  if(me&&me.role!=='borne'){const ws=weekStart(todayISO());const [mp,mpl]=await Promise.all([sb.from('pointages').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6)),sb.from('planning').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6))]);mesPointages=mp.data||[];monPlanning=mpl.data||[];if(pinPointage===null)sb.rpc('pin_pointage_defini').then(r=>{pinPointage=!!(r&&r.data);if(route==='pointage')render()},()=>{});}
+  if(me&&me.role!=='borne'){
+    const pr=await sb.from('parametres').select('*');parametres={};(pr.data||[]).forEach(x=>parametres[x.cle]=x.valeur);
+    if(me.role==='client'){const c=await sb.from('commandes').select('*, commande_lignes(*)').eq('client_id',user.id).order('retrait_jour',{ascending:false}).limit(50);commandesAll=c.data||[];}
+    else if(isResp(me)||isLabo(me)||me.role==='vendeur'){const c=await sb.from('commandes').select('*, commande_lignes(*)').gte('retrait_jour',addDays(todayISO(),-21)).lte('retrait_jour',addDays(todayISO(),90)).order('retrait_jour').order('retrait_heure');commandesAll=c.data||[];if(c.error&&route==='commandes')toast('Base pas à jour : lance etape5.sql dans Supabase.');}
+  }
+  if(me&&me.role!=='borne'&&me.role!=='client'){const ws=weekStart(todayISO());const [mp,mpl]=await Promise.all([sb.from('pointages').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6)),sb.from('planning').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6))]);mesPointages=mp.data||[];monPlanning=mpl.data||[];if(pinPointage===null)sb.rpc('pin_pointage_defini').then(r=>{pinPointage=!!(r&&r.data);if(route==='pointage')render()},()=>{});}
   if(heuresData&&route==='heures'&&!heuresData.loading)loadHeures(heuresData.ws);
   if(isResp(me)||isLabo(me)){
     const [lo,eq,re,rc]=await Promise.all([
@@ -270,7 +283,7 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -284,21 +297,21 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
 window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
-const ROUTE_TABLES={accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles']};
+const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles']};
 const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda'};
 const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
 let lastMod={},lastModT=null;
 function whenTxt(ts){const d=new Date(ts),t=todayISO(),k=isoOf(d);return (k===t?'aujourd’hui':k===addDays(t,-1)?'hier':'le '+d.getDate()+' '+MOIS[d.getMonth()])+' à '+timeOf(ts)}
-function refreshLastMod(){clearTimeout(lastModT);lastModT=setTimeout(async()=>{if(!sb||!me||me.role==='borne')return;const r=route;try{const {data,error}=await sb.rpc('derniere_modif',{p_tables:ROUTE_TABLES[r]||null});if(error)return;lastMod[r]=data||false;if(route===r)paintLastMod()}catch(e){}},400)}
-function paintLastMod(){const el=document.getElementById('lastMod');const m=lastMod[route];if(!el)return;el.innerHTML=m?`Dernière modification : <b>${esc(m.nom)}</b> · ${esc(whenTxt(m.at))} · ${esc(ACT_LBL[m.action]||'')} (${esc(TABLE_LBL[m.table]||m.table)})`:m===false?'Aucune modification enregistrée pour l’instant.':''}
+function refreshLastMod(){clearTimeout(lastModT);lastModT=setTimeout(async()=>{if(!sb||!me||me.role==='borne'||me.role==='client')return;const r=route;try{const {data,error}=await sb.rpc('derniere_modif',{p_tables:ROUTE_TABLES[r]||null});if(error)return;lastMod[r]=data||false;if(route===r)paintLastMod()}catch(e){}},400)}
+function paintLastMod(){const el=document.getElementById('lastMod');if(me&&me.role==='client'){if(el)el.remove();return}const m=lastMod[route];if(!el)return;el.innerHTML=m?`Dernière modification : <b>${esc(m.nom)}</b> · ${esc(whenTxt(m.at))} · ${esc(ACT_LBL[m.action]||'')} (${esc(TABLE_LBL[m.table]||m.table)})`:m===false?'Aucune modification enregistrée pour l’instant.':''}
 function render(){
   if(!user||!loaded)return;
   const main=$('#main'),nav=$('#nav');
@@ -306,11 +319,12 @@ function render(){
   document.body.classList.toggle('borne-mode',me.role==='borne'&&route!=='profil');
   if(me.role==='borne'&&route!=='profil'&&borne.step==='sign'&&document.getElementById('bSig'))return;
   if(me.role==='borne'){nav.innerHTML='';$('#me').innerHTML=`<span class="avatar">B</span><span>Borne</span>`;main.innerHTML=route==='profil'?profileView():borneView();if(borne.step==='sign')setTimeout(sigInit,0);return}
+  if(me.role==='client'&&!['commander','mescommandes','profil'].includes(route))route='commander';
   if(!CAN[route]())route='accueil';
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
+  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
   main.innerHTML=V[route]();
   const hd=main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
 }
@@ -366,6 +380,7 @@ function dashView(){
   const cnt={};act.forEach(p=>cnt[p.role]=(cnt[p.role]||0)+1);
   const arr=ROLE_KEYS.filter(k=>cnt[k]).map(k=>[k,cnt[k]]);const max=Math.max(1,...arr.map(a=>a[1]));
   const todo=[];
+  if(c.commandes)todo.push(`<li><a href="#commandes">${c.commandes} commande${c.commandes>1?'s':''} client à confirmer</a></li>`);
   if(c.signale)todo.push(`<li><a href="#envois">${c.signale} réassort${c.signale>1?'s':''} à valider</a></li>`);
   if(waiting.length)todo.push(`<li><a href="#equipe">${waiting.length} compte${waiting.length>1?'s':''} à valider</a></li>`);
   const missing=shopsToday.filter(id=>!clotures.some(x=>x.boutique_id===id));
@@ -528,6 +543,7 @@ function repartitionView(){
   const tIds=Object.keys(totals).filter(k=>totals[k]>0).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
   return `<div class="page">
   <div class="head"><div><h1>Répartition du ${esc(fmtDay(target))}</h1><p>Livraison du matin, préparée la veille par le labo. Quantités en flans entiers (4 parts).</p></div>${dayNav('Préparé le '+fmtDay(day))}</div>
+  ${(()=>{const cs=commandesAll.filter(c=>['nouvelle','confirmee'].includes(c.statut)&&c.retrait_jour===target);const n=cs.reduce((a,c)=>a+cmdFlans(c),0);return n?`<section class="card" style="border-color:var(--gold)"><h2>+ ${n} flan${n>1?'s':''} de commandes clients à retirer le ${esc(fmtDay(target))}</h2><p class="sub">À produire en plus de la répartition (${cs.length} commande${cs.length>1?'s':''}). Détail dans Commandes.</p></section>`:''})()}
   <section class="card dark"><h2 style="color:var(--gold-l)">Total à produire : ${grand} flans</h2>
     ${tIds.length?`<div class="chips">${tIds.map(id=>{const p=parfum(id)||{};return `<span class="chip" style="background:#2a2a2a;border-color:#3a3a3a;color:#FFF8EC">${sw(p)}${esc(p.nom)} <b>${totals[id]}</b></span>`}).join('')}</div>`:'<p class="sub">Aucune quantité pour l’instant.</p>'}
     <div class="btnrow"><button class="btn" type="button" data-act="repSend" style="background:var(--gold-l);color:var(--ink)">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="repReset">Revenir aux propositions</button></div>
@@ -572,6 +588,8 @@ function productionView(){
       ${todo.length?grp('Réassorts (urgent)',reas.sort((a,b)=>b.urgent-a.urgent))+grp('Livraison du matin · '+fmtDay(day),today)+grp('Livraison de demain matin · '+fmtDay(tmw),demain):'<p class="empty">Rien à préparer pour l’instant.</p>'}
       ${me.role==='chef_patissier'||isResp(me)?'<a class="link" href="#repartition">Préparer la répartition de demain</a>':''}
     </section>
+    ${(()=>{const cs=commandesAll.filter(c=>c.statut==='confirmee'&&(c.retrait_jour===day||c.retrait_jour===tmw)).sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure));
+      return cs.length?`<section class="card"><h2>Commandes clients à préparer <span class="badge b-info">${cs.length}</span></h2>${cs.map(c=>`<div class="envoi"><div class="envoi-h"><span><b>${esc(c.numero)}</b> · ${esc(c.client_nom)}</span><span class="meta">Retrait ${esc(retraitTxt(c))}</span></div>${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}<div class="btnrow"><button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="prete">Commande prête</button></div></div>`).join('')}</section>`:''})()}
     <section class="card"><h2>Total par parfum</h2>
       ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Reste</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${rest[id]||0}</b></td><td class="num">${tot[id]}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
       <p class="note">En flans entiers. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
@@ -855,20 +873,21 @@ function margesView(){
 
 /* --- Comptabilité (direction) --- */
 const CAT_DEP=['Matières premières','Emballages','Loyer et charges','Salaires','Charges sociales (URSSAF)','Énergie','Transport et livraison','Marketing','Équipement et entretien','Impôts et taxes','Banque et assurances','Autre'];
-const CAT_REC=['Commandes (flans entiers)','Événements et entreprises','Franchises et redevances','Autre'];
+const CAT_REC=['Événements et entreprises','Franchises et redevances','Commandes hors appli','Autre'];
 const monthOf=d=>d.slice(0,7);
 const monthLabel=m=>{const [y,mo]=m.split('-').map(Number);return MOIS[mo-1]+' '+y};
 const lastOfMonth=m=>{const [y,mo]=m.split('-').map(Number);return isoOf(new Date(y,mo,0))};
 async function loadCompta(m){
-  compta={mois:m,loading:true,clotures:[],ecritures:[],echeances:[]};
-  const [c,e,ech]=await Promise.all([
+  compta={mois:m,loading:true,clotures:[],ecritures:[],echeances:[],commandes:[]};
+  const [c,e,ech,cmd]=await Promise.all([
     sb.from('clotures').select('jour, cloture_lignes(parfum_id,quarts_vendus)').gte('jour',m+'-01').lte('jour',lastOfMonth(m)),
     sb.from('ecritures').select('*').gte('jour',m+'-01').lte('jour',lastOfMonth(m)).order('jour'),
-    sb.from('ecritures').select('*').eq('paye',false).order('echeance')
+    sb.from('ecritures').select('*').eq('paye',false).order('echeance'),
+    sb.from('commandes').select('total,retrait_jour').eq('statut','retiree').gte('retrait_jour',m+'-01').lte('retrait_jour',lastOfMonth(m))
   ]);
   if(e.error){toast(/ecritures/.test(e.error.message||'')?'Base pas à jour : lance etape3.sql dans Supabase.':frErr(e.error))}
   if(compta.mois!==m)return;
-  compta={mois:m,loading:false,clotures:c.data||[],ecritures:e.data||[],echeances:ech.data||[]};
+  compta={mois:m,loading:false,clotures:c.data||[],ecritures:e.data||[],echeances:ech.data||[],commandes:cmd.data||[]};
   if(route==='compta')render();
 }
 const ht=(ttc,tva)=>(+ttc)/(1+(+tva)/100);
@@ -879,7 +898,8 @@ function comptaView(){
   const caDay={};compta.clotures.forEach(c=>{caDay[c.jour]=(caDay[c.jour]||0)+(c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)});
   const caTTC=Object.values(caDay).reduce((a,b)=>a+b,0),caHT=caTTC/(1+tvaV/100);
   const rec=compta.ecritures.filter(e=>e.sens==='recette'),dep=compta.ecritures.filter(e=>e.sens==='depense');
-  const recTTC=rec.reduce((a,e)=>a+(+e.montant_ttc),0),recHT=rec.reduce((a,e)=>a+ht(e.montant_ttc,e.tva),0);
+  const cmdTTC=(compta.commandes||[]).reduce((a,x)=>a+(+x.total),0);
+  const recTTC=rec.reduce((a,e)=>a+(+e.montant_ttc),0)+cmdTTC,recHT=rec.reduce((a,e)=>a+ht(e.montant_ttc,e.tva),0)+cmdTTC/(1+tvaV/100);
   const depTTC=dep.reduce((a,e)=>a+(+e.montant_ttc),0),depHT=dep.reduce((a,e)=>a+ht(e.montant_ttc,e.tva),0);
   const resultat=caHT+recHT-depHT;
   const tvaColl=(caTTC-caHT)+(recTTC-recHT),tvaDed=depTTC-depHT;
@@ -897,7 +917,7 @@ function comptaView(){
     <div class="daynav" role="group" aria-label="Choisir le mois"><button class="iconbtn" type="button" data-act="mois" data-d="-1" aria-label="Mois précédent">‹</button><b>${esc(monthLabel(m))}</b><button class="iconbtn" type="button" data-act="mois" data-d="1" aria-label="Mois suivant">›</button></div></div>
   <section class="grid g4">
     <div class="card kpi"><span class="lbl">CA boutiques (TTC)</span><span class="val num">${eur(caTTC)}</span><span class="hint">${compta.clotures.length} clôture${compta.clotures.length>1?'s':''} · ${eur(caHT)} HT</span></div>
-    <div class="card kpi"><span class="lbl">Autres recettes (TTC)</span><span class="val num">${eur(recTTC)}</span><span class="hint">commandes, événements…</span></div>
+    <div class="card kpi"><span class="lbl">Autres recettes (TTC)</span><span class="val num">${eur(recTTC)}</span><span class="hint">dont ${eur(cmdTTC)} de commandes clients retirées</span></div>
     <div class="card kpi"><span class="lbl">Dépenses (TTC)</span><span class="val num">${eur(depTTC)}</span><span class="hint">${eur(depHT)} HT</span></div>
     <div class="card kpi"><span class="lbl">Résultat estimé (HT)</span><span class="val num" style="color:${resultat>=0?'var(--good)':'var(--bad)'}">${eur(resultat)}</span><span class="hint">TVA à reverser ≈ ${eur(tvaColl-tvaDed)}</span></div>
   </section>
@@ -1183,11 +1203,125 @@ function pinPointageSection(){
     <p class="msg err" id="ppErr" hidden></p><p class="note">Le code est chiffré : personne, même un responsable, ne peut le lire.</p></section>`;
 }
 
+/* ================= ÉTAPE 5 : commandes clients ================= */
+const P_DEF={seuil_flans:3,delai_petit_h:24,delai_grand_h:72,max_flans:30,jours:[2,3,4,5,6],heure_debut:'10:00',heure_fin:'18:30',pas_minutes:30,boutique_retrait:null,en_ligne:true};
+const PC=()=>Object.assign({},P_DEF,(parametres.commandes||{}));
+const ISO_JOURS=['','lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const isoDow=d=>{const x=parseISO(d).getDay();return x===0?7:x};
+const CMD_ST={nouvelle:['Reçue','b-gold'],confirmee:['Confirmée','b-info'],prete:['Prête','b-good'],retiree:['Retirée','b-mute'],annulee:['Annulée','b-bad']};
+const CMD_STEPS=['nouvelle','confirmee','prete','retiree'];
+const PAY={a_payer:'À payer',acompte:'Acompte versé',paye:'Payé'};
+const boutiqueRetrait=()=>{const p=PC();return boutiques.find(b=>b.id===p.boutique_retrait)||boutiques.find(b=>b.nom==='Saint-Lazare')||null};
+const catalogue=()=>parfums.filter(p=>p.disponible&&p.prix_entier!=null);
+function creneaux(d,minTs){const p=PC();const out=[];let m=minOf(p.heure_debut),f=minOf(p.heure_fin),step=Math.max(5,+p.pas_minutes||30);
+  for(;m<=f;m+=step){const h=pad(Math.floor(m/60))+':'+pad(m%60);if(minTs&&new Date(d+'T'+h+':00').getTime()<minTs)continue;out.push(h)}return out}
+function delaiPour(n){const p=PC();return n<=(+p.seuil_flans)?(+p.delai_petit_h):(+p.delai_grand_h)}
+function joursRetrait(n){const p=PC(),minTs=Date.now()+delaiPour(n)*3600e3,out=[];
+  for(let i=0;i<45&&out.length<21;i++){const d=addDays(todayISO(),i);if(!(p.jours||[]).includes(isoDow(d)))continue;if(creneaux(d,minTs).length)out.push(d)}return out}
+const cmdLines=c=>sortLines((c.commande_lignes||[]).map(l=>Object.assign({},l)));
+const cmdFlans=c=>(c.commande_lignes||[]).reduce((a,l)=>a+l.quantite,0);
+function cmdChips(c){return `<div class="chips">${cmdLines(c).map(l=>{const p=parfum(l.parfum_id)||{};return `<span class="chip">${sw(p)}${esc(p.nom||'Parfum')} <b>${l.quantite}</b></span>`}).join('')}</div>`}
+function cmdSteps(c){if(c.statut==='annulee')return `<span class="badge b-bad">Annulée</span>`;const i=CMD_STEPS.indexOf(c.statut);return `<div class="steps">${CMD_STEPS.map((s,k)=>`<span class="${k<i?'done':k===i?'now':''}">${CMD_ST[s][0]}</span>`).join('')}</div>`}
+const retraitTxt=c=>fmtDay(c.retrait_jour)+' à '+hhmm(c.retrait_heure);
+
+/* --- Espace client : commander --- */
+function commanderView(){
+  const p=PC(),B=boutiqueRetrait(),cat=catalogue(),cart=ui.cart||(ui.cart={});
+  const n=cat.reduce((a,x)=>a+(cart[x.id]||0),0),tot=cat.reduce((a,x)=>a+(cart[x.id]||0)*(+x.prix_entier),0);
+  const jours=n?joursRetrait(n):[];if(ui.cmdJour&&!jours.includes(ui.cmdJour))ui.cmdJour=null;const jour=ui.cmdJour||jours[0]||null;
+  const minTs=Date.now()+delaiPour(n||1)*3600e3,heures=jour?creneaux(jour,minTs):[];if(ui.cmdHeure&&!heures.includes(ui.cmdHeure))ui.cmdHeure=null;
+  const hello=me.prenom?'Bonjour '+esc(me.prenom):'Bonjour';
+  if(p.en_ligne===false)return `<div class="page"><div class="head"><div><h1>${hello}</h1></div></div><section class="card"><h2>Commandes en ligne fermées</h2><p class="sub">Les commandes en ligne sont momentanément fermées. Appelle la boutique ou passe nous voir.</p></section></div>`;
+  return `<div class="page">
+  <div class="head"><div><h1>${hello}</h1><p>Commande tes flans entiers · retrait à <b>${esc(B?B.nom:'Saint-Lazare')}</b> · paiement au retrait</p></div></div>
+  <section class="card dark" style="gap:6px"><span class="sub">Jusqu’à ${p.seuil_flans} flan${p.seuil_flans>1?'s':''} : commande ${p.delai_petit_h} h à l’avance · au-delà : ${p.delai_grand_h} h à l’avance.</span><span class="sub">Retrait du ${(p.jours||[]).map(j=>ISO_JOURS[j]).join(', ')}, de ${hhmm(p.heure_debut)} à ${hhmm(p.heure_fin)}${B&&B.adresse?' · '+esc(B.adresse):''}.</span></section>
+  <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start" id="cmdGrid">
+    <section class="parfums">${cat.length?cat.map(x=>{const q=cart[x.id]||0;return `<div class="parfum">${x.photo?`<img class="pphoto" src="${esc(x.photo)}" alt="${esc(x.nom)}" loading="lazy">`:`<div class="bandeau" style="background:${esc(x.couleur)}"></div>`}<div class="in">
+      <div class="envoi-h"><b>${esc(x.nom)}</b><span class="num" style="font-weight:700">${eur(x.prix_entier)}</span></div><span class="meta">Flan entier · 4 parts</span>
+      <div class="stepper"><button type="button" data-act="cart" data-p="${x.id}" data-d="-1" aria-label="Retirer un ${esc(x.nom)}"${q?'':' disabled'}>−</button><b class="num" aria-live="polite">${q}</b><button type="button" data-act="cart" data-p="${x.id}" data-d="1" aria-label="Ajouter un ${esc(x.nom)}">+</button></div></div></div>`}).join(''):'<p class="empty">Aucun flan entier disponible à la commande pour le moment.</p>'}</section>
+    <section class="card" style="position:sticky;top:calc(80px + env(safe-area-inset-top,0px))"><h2>Ma commande</h2>
+      ${n?`<div class="grid" style="gap:6px">${cat.filter(x=>cart[x.id]).map(x=>`<div style="display:flex;justify-content:space-between;gap:8px"><span>${sw(x)} ${cart[x.id]} × ${esc(x.nom)}</span><span class="num">${eur(cart[x.id]*x.prix_entier)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;font-weight:700"><span>${n} flan${n>1?'s':''}</span><span class="num">${eur(tot)}</span></div></div>
+        ${n>(+p.max_flans)?`<p class="msg err">Au-delà de ${p.max_flans} flans, contacte directement la boutique.</p>`:jours.length?`<label class="field">Jour de retrait<select id="cJour" data-act="cmdJour">${jours.map(d=>`<option value="${d}"${d===jour?' selected':''}>${esc(fmtDay(d))}</option>`).join('')}</select></label>
+        <label class="field">Heure<select id="cHeure" data-act="cmdHeure">${heures.map(h=>`<option value="${h}"${h===ui.cmdHeure?' selected':''}>${hhmm(h)}</option>`).join('')}</select></label>
+        <label class="field">Un mot pour nous (facultatif)<input id="cNote" maxlength="300" placeholder="Anniversaire, message, allergie…" value="${esc(ui.cmdNote||'')}"></label>
+        <p class="msg err" id="cErr" hidden></p>
+        <button class="btn" type="button" data-act="cmdValider">Valider ma commande · ${eur(tot)}</button>
+        <p class="note">Paiement au retrait. Délai pour ${n} flan${n>1?'s':''} : ${delaiPour(n)} h.</p>`:'<p class="msg err">Pas de créneau disponible dans les prochaines semaines.</p>'}`
+      :'<p class="empty">Choisis tes flans avec les boutons +.</p>'}
+    </section>
+  </div></div>`;
+}
+/* --- Espace client : mes commandes --- */
+function mesCommandesView(){
+  const list=commandesAll.slice().sort((a,b)=>(b.retrait_jour+b.retrait_heure).localeCompare(a.retrait_jour+a.retrait_heure));
+  const B=boutiqueRetrait();
+  return `<div class="page">
+  <div class="head"><div><h1>Mes commandes</h1><p>Retrait à ${esc(B?B.nom:'Saint-Lazare')} · du ${(PC().jours||[]).map(j=>ISO_JOURS[j]).join(', ')}, ${hhmm(PC().heure_debut)}–${hhmm(PC().heure_fin)} · paiement au retrait</p></div><a class="btn sm" href="#commander">+ Nouvelle commande</a></div>
+  ${ui.lastCmd?`<section class="card" style="border-color:var(--good);background:var(--good-bg)"><h2>Merci ! Commande ${esc(ui.lastCmd.numero)} envoyée</h2><p class="sub" style="color:var(--good)">La boutique va la confirmer. Tu suis son avancement ici. Paiement au retrait : ${eur(ui.lastCmd.total)}.</p></section>`:''}
+  ${list.length?list.map(c=>{const can=['nouvelle','confirmee'].includes(c.statut);return `<div class="envoi">
+    <div class="envoi-h"><span><b>Commande ${esc(c.numero)}</b> <span class="badge ${CMD_ST[c.statut][1]}">${CMD_ST[c.statut][0]}</span></span><span class="num" style="font-weight:700">${eur(c.total)}</span></div>
+    <span class="meta">Retrait ${esc(retraitTxt(c))} · ${esc(PAY[c.paiement])}${c.paiement==='acompte'?' ('+eur(c.acompte)+')':''}</span>
+    ${cmdChips(c)}${cmdSteps(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}
+    ${c.statut==='prete'?'<span class="badge b-good" style="align-self:flex-start">Ta commande t’attend en boutique</span>':''}
+    ${can?`<div class="btnrow"><button class="btn ghost sm" type="button" data-act="cmdAnnulerClient" data-id="${c.id}">Annuler la commande</button></div>`:''}</div>`}).join(''):'<section class="card"><p class="empty">Aucune commande pour l’instant.</p><a class="btn sm" href="#commander">Commander un flan</a></section>'}
+  </div>`;
+}
+
+/* --- Commandes (équipe) --- */
+function commandesView(){
+  const t=todayISO(),tab=ui.cmdTab||'aconfirmer',p=PC();
+  const live=commandesAll.filter(c=>c.statut!=='annulee');
+  const T={aconfirmer:commandesAll.filter(c=>c.statut==='nouvelle'),avenir:commandesAll.filter(c=>['confirmee','prete'].includes(c.statut)&&c.retrait_jour>=t),jour:commandesAll.filter(c=>c.retrait_jour===day&&c.statut!=='annulee'),historique:commandesAll.filter(c=>['retiree','annulee'].includes(c.statut)||(c.retrait_jour<t&&c.statut!=='prete'))};
+  const list=(T[tab]||[]).slice().sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure)*(tab==='historique'?-1:1));
+  const tabs=[['aconfirmer','À confirmer'],['avenir','À venir'],['jour','Par jour'],['historique','Terminées']];
+  const prod={};live.filter(c=>['confirmee','nouvelle'].includes(c.statut)&&(c.retrait_jour===t||c.retrait_jour===addDays(t,1))).forEach(c=>(c.commande_lignes||[]).forEach(l=>prod[l.parfum_id]=(prod[l.parfum_id]||0)+l.quantite));
+  const card=c=>{const fin=['retiree','annulee'].includes(c.statut);return `<div class="envoi${c.statut==='nouvelle'?' hot':''}">
+    <div class="envoi-h"><span><b>${esc(c.numero)}</b> <span class="badge ${CMD_ST[c.statut][1]}">${CMD_ST[c.statut][0]}</span> <span class="badge b-mute">${c.source==='en_ligne'?'En ligne':'Équipe'}</span></span><span class="num" style="font-weight:700">${eur(c.total)} · ${cmdFlans(c)} flan${cmdFlans(c)>1?'s':''}</span></div>
+    <span><b>${esc(c.client_nom)}</b>${c.client_tel?` · <span style="user-select:all">${esc(c.client_tel)}</span>`:''}${c.client_email?` · <span class="meta" style="user-select:all">${esc(c.client_email)}</span>`:''}</span>
+    <span class="meta">Retrait <b>${esc(retraitTxt(c))}</b>${c.boutique_id?' · '+esc(shopName(c.boutique_id)):''}</span>
+    ${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}${cmdSteps(c)}
+    ${fin?'':`<div class="btnrow">
+      ${c.statut==='nouvelle'?`<button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="confirmee">Confirmer</button>`:''}
+      ${c.statut==='confirmee'?`<button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="prete">Prête</button>`:''}
+      ${c.statut==='prete'?`<button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="retiree">Retirée par le client</button>`:''}
+      <label class="meta">Paiement <select class="inline-sel" data-act="cmdPay" data-id="${c.id}">${Object.entries(PAY).map(([k,l])=>`<option value="${k}"${k===c.paiement?' selected':''}>${l}</option>`).join('')}</select></label>
+      ${c.paiement==='acompte'?`<label class="meta">Acompte <input type="number" min="0" step="0.5" inputmode="decimal" data-act="cmdAcompte" data-id="${c.id}" value="${+c.acompte||''}" style="width:80px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit"> €</label>`:''}
+      <button class="btn ghost sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="annulee">Annuler</button></div>`}
+    ${fin?`<span class="meta">${esc(PAY[c.paiement])}${c.paiement==='acompte'?' · '+eur(c.acompte):''}</span>`:''}</div>`};
+  const noAccess=me.role==='vendeur'&&!commandesAll.length;
+  const allH=creneaux(day,null);
+  return `<div class="page">
+  <div class="head"><div><h1>Commandes clients</h1><p>Flans entiers · retrait à ${esc((boutiqueRetrait()||{}).nom||'Saint-Lazare')}</p></div>${tab==='jour'?dayNav():''}</div>
+  <div class="btnrow" role="tablist">${tabs.map(([k,l])=>`<button class="btn sm ${k===tab?'':'ghost'}" type="button" role="tab" aria-selected="${k===tab}" data-act="cmdTab" data-t="${k}">${l} <span class="badge ${k==='aconfirmer'&&T[k].length?'b-bad':'b-mute'}" style="margin-left:4px">${T[k].length}</span></button>`).join('')}<button class="btn sm" type="button" data-act="cmdNew" style="margin-left:auto">+ Commande par téléphone</button></div>
+  ${noAccess?'<section class="card"><p class="sub">Tu vois les commandes les jours où tu es affecté au point de retrait.</p></section>':''}
+  ${Object.keys(prod).length?`<section class="card"><h2>À produire pour les commandes (aujourd’hui et demain)</h2><div class="chips">${Object.entries(prod).sort((a,b)=>((parfum(a[0])||{}).ordre||0)-((parfum(b[0])||{}).ordre||0)).map(([id,q])=>{const x=parfum(id)||{};return `<span class="chip">${sw(x)}${esc(x.nom)} <b>${q}</b></span>`}).join('')}</div><p class="note">Le labo les voit aussi dans sa Production.</p></section>`:''}
+  ${ui.cmdNew?`<section class="card"><h2>Nouvelle commande (téléphone, boutique)</h2><form id="cmdForm" class="grid" style="gap:12px" novalidate>
+    <div class="row2"><label class="field">Nom du client<input id="ncNom" autocomplete="off"></label><label class="field">Téléphone<input id="ncTel" type="tel" autocomplete="off"></label></div>
+    <label class="field">E-mail (facultatif)<input id="ncMail" type="email" autocomplete="off"></label>
+    <div class="row2"><label class="field">Jour de retrait<input id="ncJour" type="date" min="${t}" value="${addDays(t,1)}"></label><label class="field">Heure<select id="ncHeure">${allH.map(h=>`<option>${h}</option>`).join('')}</select></label></div>
+    <div class="field">Flans entiers${qtyGrid('nc',{},catalogue())}</div>
+    <div class="row2"><label class="field">Paiement<select id="ncPay">${Object.entries(PAY).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label><label class="field">Acompte (€)<input id="ncAcompte" type="number" min="0" step="0.5" inputmode="decimal" placeholder="0"></label></div>
+    <label class="field">Note<input id="ncNote" placeholder="Message, allergie, événement…"></label>
+    <p class="msg err" id="ncErr" hidden></p>
+    <div class="btnrow"><button class="btn" type="submit">Enregistrer (confirmée)</button><button class="btn ghost sm" type="button" data-act="cmdNew">Annuler</button></div>
+    <p class="note">Commande saisie par l’équipe : pas de délai minimum imposé, à toi de vérifier avec le labo.</p></form></section>`:''}
+  <section class="card">${list.length?list.map(card).join(''):'<p class="empty">Aucune commande ici.</p>'}</section>
+  ${isResp(me)?`<section class="card"><h2>Règles des commandes en ligne</h2>
+    <form id="cmdRegles" class="grid" style="gap:12px" novalidate>
+      <label class="check"><input type="checkbox" id="crOn"${p.en_ligne!==false?' checked':''}>Commandes en ligne ouvertes</label>
+      <div class="grid g4"><label class="field">Jusqu’à (flans)<input id="crSeuil" type="number" min="1" value="${p.seuil_flans}"></label><label class="field">Délai petite commande (h)<input id="crPetit" type="number" min="0" value="${p.delai_petit_h}"></label><label class="field">Délai au-delà (h)<input id="crGrand" type="number" min="0" value="${p.delai_grand_h}"></label><label class="field">Maximum en ligne (flans)<input id="crMax" type="number" min="1" value="${p.max_flans}"></label></div>
+      <div class="grid g4"><label class="field">Retrait à partir de<input id="crDeb" type="time" value="${esc(p.heure_debut)}"></label><label class="field">Jusqu’à<input id="crFin" type="time" value="${esc(p.heure_fin)}"></label><label class="field">Créneaux toutes les (min)<input id="crPas" type="number" min="5" step="5" value="${p.pas_minutes}"></label><label class="field">Point de retrait<select id="crBout">${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}"${(boutiqueRetrait()||{}).id===b.id?' selected':''}>${esc(b.nom)}</option>`).join('')}</select></label></div>
+      <div class="field">Jours de retrait<div class="chips">${[1,2,3,4,5,6,7].map(j=>`<label class="chip" style="cursor:pointer"><input type="checkbox" name="crJ" value="${j}"${(p.jours||[]).includes(j)?' checked':''}> ${ISO_JOURS[j]}</label>`).join('')}</div></div>
+      <p class="msg err" id="crErr" hidden></p><button class="btn sm" type="submit">Enregistrer les règles</button></form>
+    <p class="note">Lien à partager aux clients (Instagram, site) : <span style="user-select:all">${esc(APP_URL)}#client</span></p></section>`:''}
+  </div>`;
+}
+
 /* --- Équipe --- */
 function teamView(){
   const waiting=profiles.filter(p=>p.role==='aucun'&&p.actif);
   const pend=invitations.filter(i=>!i.used_at);
-  const team=profiles.filter(p=>p.role!=='aucun'||!p.actif);
+  const team=profiles.filter(p=>p.role!=='client'&&(p.role!=='aucun'||!p.actif));
   const L=ui.lastInvite;
   const msg=L?`Bonjour,\nTu es invité·e dans l'appli de l'équipe du Comptoir du Flan (${roleLabel(L.role)}).\n1. Ouvre : ${APP_URL}\n2. Choisis « Activer mon compte »\n3. Utilise cette adresse : ${L.email}`:'';
   return `<div class="page">
@@ -1259,14 +1393,16 @@ function profileView(){
     <section class="card"><h2>Mes informations</h2>
       <form id="profileForm" class="grid" style="gap:12px" novalidate>
         <div class="row2"><label class="field">Prénom<input id="pPrenom" value="${esc(me.prenom||'')}" autocomplete="given-name"></label><label class="field">Nom<input id="pNom" value="${esc(me.nom||'')}" autocomplete="family-name"></label></div>
+        <label class="field">Téléphone<input id="pTel" type="tel" value="${esc(me.telephone||'')}" autocomplete="tel"></label>
         <label class="field">Adresse e-mail<input value="${esc(me.email)}" disabled></label>
         <button class="btn" type="submit">Enregistrer</button></form>
-      <p class="note">Ton rôle est géré par les responsables.</p></section>
+      ${me.role==='client'?'':'<p class="note">Ton rôle est géré par les responsables.</p>'}</section>
     <div class="grid" style="gap:16px">
       <section class="card"><h2>Code PIN</h2>
         <p class="sub">${pinRec?`Code à ${pinRec.len} chiffres actif sur cet appareil. Il est demandé à l’ouverture et après 2 minutes en arrière-plan.`:'Avec un code PIN, tu ouvres l’appli sur ce téléphone sans retaper ton mot de passe.'}</p>
         <div class="btnrow">${pinRec?'<button class="btn ghost sm" type="button" data-act="pinChange">Changer le PIN</button><button class="btn ghost sm" type="button" data-act="pinOff">Désactiver</button><button class="btn ghost sm" type="button" data-act="lock">Verrouiller maintenant</button>':'<button class="btn sm" type="button" data-act="pinOn">Activer un code PIN</button>'}</div></section>
-      ${pinPointageSection()}
+      ${me.role==='client'?'':pinPointageSection()}
+      ${me.role==='client'?`<section class="card"><h2>Supprimer mon compte</h2><p class="sub">Tes informations sont effacées. Tes commandes passées restent connues de la boutique avec ton nom, pour sa comptabilité.</p><button class="btn danger sm" type="button" data-act="delMoi">Supprimer mon compte</button></section>`:''}
       <section class="card"><h2>Session</h2><button class="btn ghost" type="button" data-act="logout">Se déconnecter</button>${me.role==='borne'?'<a class="btn ghost sm" href="#accueil">Retour à la borne</a>':''}</section>
     </div></div></div>`;
 }
@@ -1280,6 +1416,7 @@ document.addEventListener('click',async ev=>{
   if(t.id==='lockAlt'){if(pinAction)return unlockNow();locked=false;renderLock();await sb.auth.signOut();return}
   if(t.id==='toActivate')return setAuthMode(authMode==='login'?'activate':'login');
   if(t.id==='toReset')return setAuthMode('reset');
+  if(t.id==='toClient')return setAuthMode('client');
   const a=t.dataset.act,id=t.dataset.id;if(!a)return;
   switch(a){
     case 'logout':await sb.auth.signOut();return;
@@ -1343,6 +1480,16 @@ document.addEventListener('click',async ev=>{
     case 'agMois':{const [y,mo]=(ui.agMois||monthOf(todayISO())).split('-').map(Number);ui.agMois=isoOf(new Date(y,mo-1+(+t.dataset.d),1)).slice(0,7);agData=null;return render()}
     case 'agCat':{ui.agOff=ui.agOff||{};ui.agOff[t.dataset.k]=!ui.agOff[t.dataset.k];return render()}
     case 'agDel':{if(!armed(t))return;const r=await act(()=>sb.from('evenements').delete().eq('id',id),'Événement retiré');if(r)loadAgenda(ui.agMois||monthOf(todayISO()));return}
+    case 'cart':{const c=ui.cart||(ui.cart={});const q=Math.max(0,(c[t.dataset.p]||0)+(+t.dataset.d));if(q)c[t.dataset.p]=q;else delete c[t.dataset.p];ui.lastCmd=null;return render()}
+    case 'cmdValider':{const cat=catalogue(),cart=ui.cart||{};const lignes=cat.filter(x=>cart[x.id]).map(x=>({parfum_id:x.id,quantite:cart[x.id]}));const j=$('#cJour')&&$('#cJour').value,h=$('#cHeure')&&$('#cHeure').value,err=$('#cErr');
+      if(!lignes.length||!j||!h){err.textContent='Choisis tes flans, un jour et une heure.';err.hidden=false;return}
+      t.disabled=true;try{const {data,error}=await sb.rpc('passer_commande',{p_lignes:lignes,p_jour:j,p_heure:h,p_note:($('#cNote')||{}).value||null});if(error)throw error;
+        ui.cart={};ui.cmdJour=null;ui.cmdHeure=null;ui.cmdNote='';ui.lastCmd=data;location.hash='#mescommandes';reload()}catch(e){t.disabled=false;err.textContent=frErr(e);err.hidden=false}return}
+    case 'cmdAnnulerClient':{if(!armed(t,'Confirmer l’annulation'))return;t.disabled=true;try{const {error}=await sb.rpc('annuler_commande',{p_id:id});if(error)throw error;toast('Commande annulée');reload()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'delMoi':{if(!armed(t,'Confirmer : supprimer définitivement'))return;t.disabled=true;try{const {error}=await sb.rpc('supprimer_mon_compte_client');if(error)throw error;toast('Compte supprimé');await sb.auth.signOut()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'cmdTab':ui.cmdTab=t.dataset.t;return render();
+    case 'cmdNew':ui.cmdNew=!ui.cmdNew;return render();
+    case 'cmdSt':{const s2=t.dataset.s;if(s2==='annulee'&&!armed(t,'Confirmer l’annulation'))return;return act(()=>sb.from('commandes').update({statut:s2}).eq('id',id),{confirmee:'Commande confirmée',prete:'Commande prête',retiree:'Commande retirée',annulee:'Commande annulée'}[s2])}
     case 'laboTab':ui.laboTab=t.dataset.t;return render();
     case 'lotPrefill':ui.lotPrefill={p:t.dataset.p,q:+t.dataset.q};render();const el=$('#loIngr');if(el)el.focus();return;
     case 'lotStep':{const l=lots.find(x=>x.id===id);if(!l)return;const st=LOT_STEPS.find(s=>s.k===t.dataset.k);const row={};row[st.k]=new Date().toISOString();
@@ -1375,6 +1522,10 @@ document.addEventListener('change',ev=>{
     if(a==='recQte'){const q=parseFloat(String(x.value).replace(',','.'))||0;act(()=>sb.from('recettes').upsert({parfum_id:x.dataset.p,ingredient_id:x.dataset.i,quantite:q}),'Recette mise à jour');return}
     if(a==='reglage'){const v=parseFloat(String(x.value).replace(',','.'));if(!isFinite(v))return;act(()=>sb.from('reglages').upsert({cle:x.dataset.k,valeur:v}),'Réglage enregistré');return}
   }
+  const cj=ev.target.closest('[data-act="cmdJour"]');if(cj){ui.cmdJour=cj.value;ui.cmdHeure=null;ui.cmdNote=($('#cNote')||{}).value||'';return render()}
+  const ch=ev.target.closest('[data-act="cmdHeure"]');if(ch){ui.cmdHeure=ch.value;return}
+  const cp=ev.target.closest('[data-act="cmdPay"]');if(cp){act(()=>sb.from('commandes').update({paiement:cp.value}).eq('id',cp.dataset.id),'Paiement mis à jour');return}
+  const ca2=ev.target.closest('[data-act="cmdAcompte"]');if(ca2){const v=parseFloat(String(ca2.value).replace(',','.'))||0;act(()=>sb.from('commandes').update({acompte:v}).eq('id',ca2.dataset.id),'Acompte enregistré');return}
   const es=ev.target.closest('#ecSens');if(es){const c=$('#ecCat');if(c)c.innerHTML=(es.value==='recette'?CAT_REC:CAT_DEP).map(v=>`<option>${esc(v)}</option>`).join('');const tv=$('#ecTva');if(tv&&es.value==='recette')tv.value='5.5';return}
   const ca=ev.target.closest('input[data-act="calAdj"]');
   if(ca){act(()=>sb.from('calendrier').update({ajustement:parseInt(ca.value,10)||0}).eq('id',ca.dataset.id),'Effet mis à jour');rep.target=null;return}
@@ -1411,7 +1562,7 @@ document.addEventListener('submit',async ev=>{
     if(error)return fail('#iErr',frErr(error));
     ui.lastInvite={email,role};toast('Invitation créée');reload();return;
   }
-  if(f.id==='profileForm'){await act(()=>sb.from('profiles').update({prenom:$('#pPrenom').value.trim()||null,nom:$('#pNom').value.trim()||null}).eq('id',me.id),'Profil enregistré');if(btn)btn.disabled=false;return}
+  if(f.id==='profileForm'){await act(()=>sb.from('profiles').update({prenom:$('#pPrenom').value.trim()||null,nom:$('#pNom').value.trim()||null,telephone:$('#pTel').value.trim()||null}).eq('id',me.id),'Profil enregistré');if(btn)btn.disabled=false;return}
   if(f.id==='planForm'){
     const lieuV=$('#plLieu').value,isB=lieuV.startsWith('b:');
     const row={jour:day,user_id:$('#plUser').value,lieu:isB?'boutique':lieuV,boutique_id:isB?lieuV.slice(2):null,debut:$('#plDebut').value||null,fin:$('#plFin').value||null,note:$('#plNote').value.trim()||null};
@@ -1447,6 +1598,18 @@ document.addEventListener('submit',async ev=>{
     const r=await sb.from('cloture_lignes').upsert(lines.map(l=>Object.assign({cloture_id:data.id},l)),{onConflict:'cloture_id,parfum_id'});
     if(r.error)return fail('#clErr',frErr(r.error));
     toast('Clôture enregistrée');reload();return;
+  }
+  if(f.id==='cmdForm'){
+    const lignes=readGrid('nc',catalogue()).map(l=>({parfum_id:l.parfum_id,quantite:l.q}));const nom=$('#ncNom').value.trim(),j=$('#ncJour').value;
+    if(!nom)return fail('#ncErr','Indique le nom du client.');if(!j)return fail('#ncErr','Indique le jour de retrait.');if(!lignes.length)return fail('#ncErr','Indique au moins un flan.');
+    const pay=$('#ncPay').value,ac=parseFloat(String($('#ncAcompte').value).replace(',','.'))||0;
+    const {data,error}=await sb.rpc('passer_commande',{p_lignes:lignes,p_jour:j,p_heure:$('#ncHeure').value,p_note:$('#ncNote').value.trim()||null,p_client:{nom,tel:$('#ncTel').value.trim(),email:$('#ncMail').value.trim()},p_paiement:pay,p_acompte:pay==='acompte'?ac:0});
+    if(error)return fail('#ncErr',frErr(error));ui.cmdNew=false;ui.cmdTab='avenir';toast('Commande '+data.numero+' enregistrée');reload();return;
+  }
+  if(f.id==='cmdRegles'){
+    const jours=[...f.querySelectorAll('input[name="crJ"]:checked')].map(x=>+x.value);const v={seuil_flans:+$('#crSeuil').value||1,delai_petit_h:+$('#crPetit').value||0,delai_grand_h:+$('#crGrand').value||0,max_flans:+$('#crMax').value||1,heure_debut:$('#crDeb').value,heure_fin:$('#crFin').value,pas_minutes:Math.max(5,+$('#crPas').value||30),boutique_retrait:$('#crBout').value||null,jours,en_ligne:$('#crOn').checked};
+    if(!jours.length)return fail('#crErr','Choisis au moins un jour de retrait.');if(!v.heure_debut||!v.heure_fin||v.heure_fin<=v.heure_debut)return fail('#crErr','Vérifie les horaires de retrait.');
+    const {error}=await sb.from('parametres').upsert({cle:'commandes',valeur:v});if(error)return fail('#crErr',frErr(error));toast('Règles enregistrées');reload();if(btn)btn.disabled=false;return;
   }
   if(f.id==='ptForm'){
     const h=$('#ptHeure').value;if(!h)return fail('#ptErr','Indique l’heure.');
@@ -1571,9 +1734,10 @@ async function submitAuth(){
   err.hidden=true;ok.hidden=true;const fail=m=>{err.textContent=m;err.hidden=false};
   if(!/^\S+@\S+\.\S+$/.test(email))return fail('Entre une adresse e-mail valide.');
   if(authMode==='login'&&!pw)return fail('Entre ton mot de passe.');
-  if(authMode==='activate'){
+  if(authMode==='activate'||authMode==='client'){
     if(!$('#aPrenom').value.trim())return fail('Entre ton prénom.');
-    if(pw.length<10)return fail('Le mot de passe doit faire au moins 10 caractères.');
+    if(authMode==='client'&&!/^[+0-9 .()-]{8,20}$/.test($('#aTel').value.trim()))return fail('Entre ton numéro de téléphone (pour te prévenir si besoin).');
+    if(pw.length<(authMode==='client'?8:10))return fail('Le mot de passe doit faire au moins '+(authMode==='client'?8:10)+' caractères.');
     if(!$('#aCharte').checked)return fail('Coche la case pour continuer.');
   }
   const btn=$('#authBtn');btn.disabled=true;
@@ -1581,6 +1745,9 @@ async function submitAuth(){
     if(authMode==='login'){justLoggedIn=true;const {error}=await sb.auth.signInWithPassword({email,password:pw});if(error){justLoggedIn=false;fail(frErr(error))}}
     else if(authMode==='activate'){
       const {data,error}=await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:APP_URL,data:{prenom:$('#aPrenom').value.trim(),nom:$('#aNom').value.trim()}}});
+      if(error)fail(frErr(error));else if(!data.session)setAuthMode('login','Compte créé. Clique le lien du mail de confirmation (pense aux spams), puis connecte-toi ici.');else justLoggedIn=true;
+    }else if(authMode==='client'){
+      const {data,error}=await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:APP_URL,data:{espace:'client',prenom:$('#aPrenom').value.trim(),nom:$('#aNom').value.trim(),telephone:$('#aTel').value.trim()}}});
       if(error)fail(frErr(error));else if(!data.session)setAuthMode('login','Compte créé. Clique le lien du mail de confirmation (pense aux spams), puis connecte-toi ici.');else justLoggedIn=true;
     }else{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:APP_URL});if(error)fail(frErr(error));else setAuthMode('login','Si un compte existe avec cette adresse, un lien vient d’être envoyé.')}
   }finally{btn.disabled=false}

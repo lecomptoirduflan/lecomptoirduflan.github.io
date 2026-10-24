@@ -24,8 +24,8 @@
 <section class="auth" id="auth" hidden>
   <div class="auth-side">
     <div class="auth-logo"><img src="icons/logo.png" alt="Le Comptoir du Flan"></div>
-    <div class="auth-tag">Produire juste.<br>Vendre mieux.</div>
-    <p class="auth-sub">L'outil interne de l'équipe : production, ventes, stocks et prévisions.</p>
+    <div class="auth-tag" id="authTag">Produire juste.<br>Vendre mieux.</div>
+    <p class="auth-sub" id="authSub">L'outil interne de l'équipe : production, ventes, stocks et prévisions.</p>
   </div>
   <div class="auth-main">
     <form id="authForm" novalidate>
@@ -37,9 +37,10 @@
         <label class="field">Prénom<input id="aPrenom" autocomplete="given-name"></label>
         <label class="field">Nom<input id="aNom" autocomplete="family-name"></label>
       </div>
+      <label class="field" id="telRow" hidden>Téléphone<input id="aTel" type="tel" autocomplete="tel" placeholder="06 12 34 56 78"></label>
       <label class="field">Adresse e-mail<input id="aEmail" type="email" autocomplete="email" placeholder="prenom@exemple.fr"></label>
       <label class="field" id="pwRow">Mot de passe<input id="aPw" type="password" autocomplete="current-password"><small id="pwHint" hidden>10 caractères minimum.</small></label>
-      <label class="check" id="charteRow" hidden><input type="checkbox" id="aCharte">J'accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l'organisation du travail.</label>
+      <label class="check" id="charteRow" hidden><input type="checkbox" id="aCharte"><span id="charteTxt">J'accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l'organisation du travail.</span></label>
       <p class="msg err" id="authErr" hidden></p>
       <p class="msg ok" id="authOk" hidden></p>
       <button class="btn" type="submit" id="authBtn">Se connecter</button>
@@ -47,6 +48,7 @@
         <button class="link" type="button" id="toActivate">Première connexion ? Activer mon compte</button>
         <button class="link" type="button" id="toReset">Mot de passe oublié</button>
       </div>
+      <div class="client-cta" id="clientCta"><span>Vous êtes client ?</span><button class="btn ghost sm" type="button" id="toClient">Commander un flan entier</button></div>
     </form>
     <form id="newPwForm" novalidate hidden>
       <h1>Nouveau mot de passe</h1>
