@@ -58,10 +58,12 @@ const CAN={
   pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne',
   commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client',
   clients:()=>isResp(me), contacts:()=>isResp(me), demandes:()=>isResp(me), cm:()=>isResp(me)||me.role==='cm',
+  fichiers:()=>!['client','borne'].includes(me.role), notifs:()=>me.role!=='borne',
   maison:()=>me.role==='client', nosparfums:()=>me.role==='client', histoire:()=>me.role==='client', infos:()=>me.role==='client', ensemble:()=>me.role==='client', allergenes:()=>me.role==='client'
 };
-const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','allergenes','ensemble','profil'];
-function navItems(){
+const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','allergenes','ensemble','profil','notifs'];
+function navItems(){const l=navItems0();if(me.role!=='client'&&me.role!=='borne'){const i=l.findIndex(x=>x[0]==='equipe'||x[0]==='boutiques');l.splice(i<0?l.length:i,0,['fichiers','Fichiers'])}return l}
+function navItems0(){
   if(me.role==='client')return [['maison','Accueil'],['nosparfums','Nos parfums'],['commander','Commander'],['mescommandes','Mes commandes'],['histoire','Notre histoire'],['infos','Infos pratiques'],['allergenes','Allergènes'],['ensemble','Travaillons ensemble'],['profil','Mon profil']];
   if(me.role==='cm')return [['accueil','Accueil'],['pointage','Mes heures'],['cm','Réseaux sociaux'],['planning','Mon planning'],['agenda','Agenda']];
   if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['demandes','Demandes'],['cm','Réseaux sociaux'],['clients','Clients'],['contacts','Contacts'],['equipe','Équipe'],['boutiques','Points de vente']]);
@@ -76,12 +78,12 @@ function navItems(){
 const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes clients','Flans entiers, retrait à Saint-Lazare','#commandes',null,'commandes')]},
-  {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
-  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda')]},
+  {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions, stocks','#labo')]},
+  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda'),T('Photos et fichiers','Partagés par l’équipe','#fichiers')]},
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies'),T('Contacts','Équipe, fournisseurs, clients pro','#contacts')]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients')]}
 ];
-const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
+const LABO_TILES=[T('Production','Envois à préparer, plaques, réassorts','#production',null,'labo'),T('Postes et stocks','Chambres froides, congélateurs, rangements','#labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
 const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
 const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
@@ -288,6 +290,8 @@ async function loadAll(){
     ingredients=ig.data||[];recettes=rc.data||[];reglages={};(rg.data||[]).forEach(r=>reglages[r.cle]=r.valeur);
   }
   if(isResp(me)){const [ct,dm]=await Promise.all([sb.from('contacts').select('*').order('nom'),sb.from('demandes').select('*').order('created_at',{ascending:false}).limit(500)]);contacts=ct.data||[];demandes=dm.data||[];if(ct.error&&['contacts','demandes'].includes(route))toast('Base pas à jour : lance etape6.sql dans Supabase.');if(route==='clients'&&clientsData&&!clientsData.loading)loadClients()}else{contacts=[];demandes=[]}
+  if(me&&me.role!=='borne'){const nt=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(60);notifs=nt.data||[]}else notifs=[];
+  if(isResp(me)||isLabo(me)){const [po,sa]=await Promise.all([sb.from('postes').select('*').order('ordre'),sb.from('stock_articles').select('*')]);postes=po.data||[];stockArticles=sa.data||[];if(po.error&&route==='labo'&&ui.laboTab==='stocks')toast('Base pas à jour : lance etape7.sql dans Supabase.')}else{postes=[];stockArticles=[]}
   if(me&&me.role!=='borne'){const rz=await sb.from('reseaux').select('*').order('ordre');reseauxList=rz.data||[]}
   if(me&&(isResp(me)||me.role==='cm')){const [pb,rs]=await Promise.all([sb.from('publications').select('*').gte('jour',addDays(todayISO(),-120)).lte('jour',addDays(todayISO(),240)).order('jour'),sb.from('reseaux_stats').select('*').gte('mois',addDays(todayISO(),-400))]);publications=pb.data||[];reseauxStats=rs.data||[];if(pb.error&&route==='cm')toast('Base pas à jour : lance etape6.sql dans Supabase.')}else{publications=[];reseauxStats=[]}
   if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
@@ -297,7 +301,8 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres','contacts','demandes','publications','reseaux_stats','reseaux'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres','contacts','demandes','publications','reseaux_stats','reseaux','postes','stock_articles','fichiers'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+user.id},pl=>{const n=pl.new;if(!n||notifs.some(x=>x.id===n.id))return;notifs.unshift(n);paintBell();sysNotif(n);if(route==='notifs')render()});
   channel.subscribe();
 }
 
@@ -311,16 +316,16 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
+function stopApp(){notifs=[];postes=[];stockArticles=[];fichiers=null;const bl=$('#bell');if(bl)bl.hidden=true;if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['fichiers','notifs','allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='fichiers')fichiers=null;ui.posteAdd=false;ui.posteEdit=null;ui.artEdit=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
-const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
-const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés',reseaux:'réseaux'};
+const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements','postes','stock_articles'],fichiers:['fichiers'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
+const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés',reseaux:'réseaux',postes:'postes du labo',stock_articles:'stocks du labo',fichiers:'fichiers'};
 const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
 let lastMod={},lastModT=null;
 function whenTxt(ts){const d=new Date(ts),t=todayISO(),k=isoOf(d);return (k===t?'aujourd’hui':k===addDays(t,-1)?'hier':'le '+d.getDate()+' '+MOIS[d.getMonth()])+' à '+timeOf(ts)}
@@ -336,12 +341,13 @@ function render(){
   if(me.role==='client'&&!CLIENT_ROUTES.includes(route))route='maison';
   if(!CAN[route]())route=me.role==='client'?'maison':'accueil';
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
+  paintBell();
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView,allergenes:allergenesView};
+  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView,allergenes:allergenesView,fichiers:fichiersView,notifs:notifsView};
   main.innerHTML=V[route]();
   if(me.role==='client'){const f=main.querySelector('.s-foot');const sh=socialHTML();if(f&&sh)f.insertAdjacentHTML('afterend',sh)}
-  const hd=main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
+  const hd=route==='notifs'?null:main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
 }
 
 function waitView(){
@@ -370,7 +376,7 @@ function homeView(){
   }else{
     const aff=myToday();
     const banner=aff.length?`<div class="banner"><span class="k">Aujourd’hui</span>${aff.map(a=>`<span class="v">${esc(lieuLabel(a))}</span><span class="s">${a.debut?hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):'Horaires à préciser'}${a.note?' · '+esc(a.note):''}</span>`).join('')}</div>`:`<div class="card"><span class="sub">Pas d’affectation prévue aujourd’hui.</span></div>`;
-    const tiles=[PT_TILE].concat(ROLE_TILES[me.role]||[]).concat([T('Agenda','Dates importantes','#agenda'),T('Mon profil','Prénom, codes PIN','#profil')]);
+    const tiles=[PT_TILE].concat(ROLE_TILES[me.role]||[]).concat([T('Agenda','Dates importantes','#agenda'),T('Photos et fichiers','Photos, vidéos, documents','#fichiers'),T('Mon profil','Prénom, codes PIN','#profil')]);
     body=banner+`<section class="pole"><div class="pole-h"><h2>Mon espace</h2><span>${esc(roleLabel(me.role))}</span></div><div class="tiles">${tiles.map(t=>tileHTML(t,false,c)).join('')}</div></section>`;
   }
   return `<div class="page"><div class="head"><div><h1>${hello}</h1><p>${esc(roleLabel(me.role))} · ${esc(fmtDay(todayISO()))}</p></div></div>${body}<p class="note">Les modules marqués « Étape » arrivent au fil des mises à jour.</p></div>`;
@@ -532,13 +538,13 @@ function repartitionView(){
   const onTour=new Set(planning.filter(p=>p.jour===target&&p.lieu==='tournee').map(p=>p.user_id));
   const defLiv=(livs.find(l=>onTour.has(l.id))||{}).id||'';
   const anyPlan=planning.some(p=>p.jour===target&&p.lieu==='boutique');
-  const totals={};let grand=0;
+  const totals={};let grand=0;const repLines=[];
   const cards=shops.map(b=>{
     const rows=repRows(b.id,target);const inc=rep.inc[b.id];
     const ex=envoisAll.find(e=>e.jour===target&&e.boutique_id===b.id&&e.type==='matin'&&e.statut!=='refuse');
     const locked=ex&&ex.statut!=='valide';
     const q=rep.qty[b.id]||{};
-    let tot=0;rows.forEach(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);if(inc){totals[r.p.id]=(totals[r.p.id]||0)+v;tot+=v}});grand+=inc?tot:0;
+    let tot=0;rows.forEach(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);if(inc){totals[r.p.id]=(totals[r.p.id]||0)+v;tot+=v;if(v)repLines.push({b:b.id,p:r.p.id,parts:v*PARTS})}});grand+=inc?tot:0;
     const m=meteoOf(b.id,target),cal=calFor(b.id,target),adj=repAdj(b.id,target);
     const vend=planning.filter(p=>p.jour===target&&p.lieu==='boutique'&&p.boutique_id===b.id).map(p=>displayName(prof(p.user_id)));
     const noHist=rows.every(r=>r.h.base==null);
@@ -564,6 +570,7 @@ function repartitionView(){
     <div class="btnrow"><button class="btn" type="button" data-act="repSend" style="background:var(--gold-l);color:var(--ink)">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="repReset">Revenir aux propositions</button></div>
     <p class="sub">Propositions = ventes prévues (60 % moyenne du même jour + 40 % veille, ajustées météo et calendrier) − stock encore vendable demain. Un flan se vend ${DUREE} jours après sa production.</p>
   </section>
+  ${plaquesTable(repLines,'Récap des plaques · '+fmtDay(target),'Parts par boutique et plaques à produire, d’après les quantités ci-dessous',isResp(me))}
   ${cards}
   ${isResp(me)?calendrierSection():''}
   </div>`;
@@ -598,6 +605,7 @@ function productionView(){
   const grp=(t,l)=>l.length?`<div class="grid" style="gap:10px"><div class="meta" style="font-weight:700">${t}</div>${l.map(card).join('')}</div>`:'';
   return `<div class="page">
   <div class="head"><div><h1>Production</h1><p>${sum(rest)} flans encore à préparer · ${sum(tot)} au total (aujourd’hui et demain matin)</p></div>${dayNav()}</div>
+  ${(()=>{const pj=plaquesFromEnvois(tmw).length?tmw:day;return plaquesTable(plaquesFromEnvois(pj),'Plaques pour la livraison du '+fmtDay(pj),'D’après la répartition envoyée au labo',isResp(me))})()}
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>À préparer <span class="badge ${todo.length?'b-info':'b-mute'}">${todo.length}</span></h2>
       ${todo.length?grp('Réassorts (urgent)',reas.sort((a,b)=>b.urgent-a.urgent))+grp('Livraison du matin · '+fmtDay(day),today)+grp('Livraison de demain matin · '+fmtDay(tmw),demain):'<p class="empty">Rien à préparer pour l’instant.</p>'}
@@ -762,10 +770,10 @@ function lotDest(l){
 /* --- Labo · HACCP --- */
 function laboView(){
   const tab=ui.laboTab||'lots';
-  const tabs=[['lots','Lots de production'],['temp','Températures'],['recep','Réceptions']];
-  const body=tab==='lots'?laboLots():tab==='temp'?laboTemps():laboRecep();
+  const tabs=[['lots','Lots de production'],['temp','Températures'],['recep','Réceptions'],['stocks','Postes et stocks']];
+  const body=tab==='lots'?laboLots():tab==='temp'?laboTemps():tab==='stocks'?laboStocks():laboRecep();
   return `<div class="page">
-  <div class="head"><div><h1>Labo · HACCP</h1><p>Traçabilité de la production, des températures et des marchandises</p></div>${tab==='temp'?'':dayNav()}</div>
+  <div class="head"><div><h1>${tab==='stocks'?'Labo · postes et stocks':'Labo · HACCP'}</h1><p>${tab==='stocks'?'Ce qu’il y a dans chaque chambre froide, congélateur, cellule, four, plonge et rangement':'Traçabilité de la production, des températures et des marchandises'}</p></div>${tab==='temp'||tab==='stocks'?'':dayNav()}</div>
   <div class="btnrow" role="tablist">${tabs.map(([k,l])=>`<button class="btn sm ${k===tab?'':'ghost'}" type="button" role="tab" aria-selected="${k===tab}" data-act="laboTab" data-t="${k}">${l}</button>`).join('')}</div>
   ${body}</div>`;
 }
@@ -1753,6 +1761,125 @@ function cmView(){
 }
 function csvDownload(rows,name){const csv='﻿'+rows.map(r=>r.map(v=>{const s=String(v==null?'':v);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
+/* ================= Étape 7 : plaques, postes et stocks, fichiers, notifications ================= */
+let postes=[],stockArticles=[],notifs=[],fichiers=null,fichUrls={};
+const PP=()=>Math.max(1,+(((parametres.labo||{}).parts_plaque))||15);
+
+/* --- Plaques (1 plaque = PP() parts) --- */
+// lines : [{b:boutique_id, p:parfum_id, parts}]
+function plaquesTable(lines,titre,sousTitre,editable){
+  const pp=PP();const by={};const shopIds=[];
+  lines.forEach(l=>{if(!l.parts)return;(by[l.p]=by[l.p]||{})[l.b]=(by[l.p][l.b]||0)+l.parts;if(!shopIds.includes(l.b))shopIds.push(l.b)});
+  const shops=boutiques.filter(b=>shopIds.includes(b.id));
+  const ids=Object.keys(by).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
+  let totParts=0,totPl=0;const colTot={};
+  const rows=ids.map(id=>{const p=parfum(id)||{nom:'?'};const t=Object.values(by[id]).reduce((a,x)=>a+x,0);const pl=Math.ceil(t/pp);totParts+=t;totPl+=pl;
+    shops.forEach(s=>colTot[s.id]=(colTot[s.id]||0)+(by[id][s.id]||0));
+    return `<tr><td>${sw(p)} ${esc(p.nom)}</td>${shops.map(s=>`<td class="num">${by[id][s.id]||'<span class="meta">·</span>'}</td>`).join('')}<td class="num"><b>${t}</b></td><td class="num pl"><b>${pl}</b></td><td class="num meta">${pl*pp-t||''}</td></tr>`}).join('');
+  return `<section class="card plaques"><div class="envoi-h"><div><h2 style="margin:0">${esc(titre)}</h2><span class="meta">${esc(sousTitre)}</span></div><div class="btnrow noprint">${editable?`<label class="meta">1 plaque = <input type="number" min="1" max="60" data-act="ppSet" value="${pp}" style="width:58px;min-height:34px;border:1px solid var(--line2);border-radius:8px;text-align:center;font:inherit" aria-label="Parts par plaque"> parts</label>`:`<span class="meta">1 plaque = ${pp} parts</span>`}<button class="btn ghost sm" type="button" data-act="print">Imprimer</button></div></div>
+    ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:${360+shops.length*90}px"><thead><tr><th>Parfum</th>${shops.map(s=>`<th class="num">${esc(s.nom)}</th>`).join('')}<th class="num">Total parts</th><th class="num">Plaques</th><th class="num" title="Parts en plus une fois les plaques coupées">En plus</th></tr></thead><tbody>${rows}
+    <tr class="total"><td>Total</td>${shops.map(s=>`<td class="num">${colTot[s.id]||0}</td>`).join('')}<td class="num">${totParts}</td><td class="num pl">${totPl}</td><td></td></tr></tbody></table></div>
+    <p class="note">Plaques = total des parts ÷ ${pp}, arrondi à la plaque du dessus. « En plus » : parts qui restent une fois les plaques coupées.</p>`:'<p class="empty">Aucune quantité pour l’instant.</p>'}</section>`;
+}
+function plaquesFromEnvois(jour){
+  const out=[];envoisAll.filter(e=>e.jour===jour&&e.type==='matin'&&!['signale','refuse'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>out.push({b:e.boutique_id,p:l.parfum_id,parts:(l.quantite||0)*PARTS})));return out;
+}
+
+/* --- Postes et stocks du labo --- */
+const POSTE_T={chambre_froide:'Chambre froide',congelateur:'Congélateur',cellule:'Cellule de refroidissement',pasteurisateur:'Pasteurisateur',four:'Four',plonge:'Plonge',rangement:'Rangement',autre:'Autre'};
+const UNITES=['pièce','kg','g','L','bac','plaque','carton','sachet','boîte','rouleau'];
+const fmtQ=q=>(+q).toLocaleString('fr-FR',{maximumFractionDigits:2});
+const bas=a=>a.seuil!=null&&+a.quantite<=+a.seuil;
+function posteForm(p){p=p||{nom:'',type:'rangement',note:''};
+  return `<form class="grid" style="gap:10px" data-posteform="${p.id||'new'}" novalidate><div class="row2"><label class="field">Nom<input name="nom" value="${esc(p.nom)}" placeholder="Chambre froide 2, étagère pâtes…"></label><label class="field">Type<select name="type">${Object.entries(POSTE_T).map(([k,v])=>`<option value="${k}"${k===p.type?' selected':''}>${v}</option>`).join('')}</select></label></div>
+    <label class="field">Note<input name="note" value="${esc(p.note||'')}" placeholder="Emplacement, consignes…"></label><p class="msg err" hidden></p>
+    <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="posteCancel">Annuler</button></div></form>`}
+function articleForm(a){
+  return `<form class="grid" style="gap:8px" data-artform="${a.id}" novalidate><div class="row2"><label class="field">Article<input name="nom" value="${esc(a.nom)}"></label><label class="field">Poste<select name="poste_id">${postes.map(p=>`<option value="${p.id}"${p.id===a.poste_id?' selected':''}>${esc(p.nom)}</option>`).join('')}</select></label></div>
+    <div class="row2"><label class="field">Unité<input name="unite" list="unites" value="${esc(a.unite)}"></label><label class="field">Alerte en dessous de<input name="seuil" type="number" min="0" step="any" value="${a.seuil??''}" placeholder="Pas d’alerte"></label></div>
+    <label class="field">Note<input name="note" value="${esc(a.note||'')}"></label><p class="msg err" hidden></p>
+    <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="artCancel">Annuler</button></div></form>`}
+function laboStocks(){
+  const alertes=stockArticles.filter(bas);
+  const list=postes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0));
+  return `<datalist id="unites">${UNITES.map(u=>`<option value="${u}">`).join('')}</datalist>
+  ${alertes.length?`<section class="card" style="border-color:var(--bad)"><h2>Stock bas <span class="badge b-bad">${alertes.length}</span></h2><div class="chips">${alertes.map(a=>`<span class="chip" style="border-color:var(--bad)">${esc(a.nom)} <b>${fmtQ(a.quantite)} ${esc(a.unite)}</b> · ${esc((postes.find(p=>p.id===a.poste_id)||{}).nom||'')}</span>`).join('')}</div></section>`:''}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center"><input class="search" id="stQ" type="search" placeholder="Chercher un article (fonds de cercles, crème…)" aria-label="Chercher un article">${ui.posteAdd?'':'<button class="btn sm" type="button" data-act="posteAdd">+ Ajouter un poste</button>'}</div>
+  ${ui.posteAdd?`<section class="card"><h2>Nouveau poste</h2>${posteForm(null)}</section>`:''}
+  <div class="postes">${list.map(p=>{const arts=stockArticles.filter(a=>a.poste_id===p.id).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+    return `<section class="card poste" data-q="${esc((p.nom+' '+arts.map(a=>a.nom).join(' ')).toLowerCase())}">
+    ${ui.posteEdit===p.id?posteForm(p):`<div class="envoi-h"><div><h2 style="margin:0">${esc(p.nom)}</h2><span class="meta">${esc(POSTE_T[p.type]||p.type)}${p.note?' · '+esc(p.note):''}</span></div><div class="btnrow"><button class="btn ghost sm" type="button" data-act="posteEdit" data-id="${p.id}">Renommer</button><button class="btn ghost sm" type="button" data-act="posteDel" data-id="${p.id}">Supprimer</button></div></div>`}
+    ${arts.length?`<div class="arts">${arts.map(a=>ui.artEdit===a.id?`<div class="art">${articleForm(a)}</div>`:`<div class="art${bas(a)?' low':''}" data-q="${esc((a.nom+' '+p.nom).toLowerCase())}">
+      <div class="art-n"><b>${esc(a.nom)}</b><small>${a.seuil!=null?'Alerte sous '+fmtQ(a.seuil)+' '+esc(a.unite):''}${a.note?(a.seuil!=null?' · ':'')+esc(a.note):''}</small></div>
+      <div class="art-q"><button type="button" data-act="stPlus" data-id="${a.id}" data-d="-1" aria-label="Retirer 1 ${esc(a.nom)}">−</button><input type="number" min="0" step="any" inputmode="decimal" data-act="stSet" data-id="${a.id}" value="${fmtQ(a.quantite).replace(/\s/g,'').replace(',','.')}" aria-label="Quantité de ${esc(a.nom)}"><button type="button" data-act="stPlus" data-id="${a.id}" data-d="1" aria-label="Ajouter 1 ${esc(a.nom)}">+</button><span class="meta">${esc(a.unite)}</span></div>
+      <div class="btnrow"><button class="btn ghost sm" type="button" data-act="artEdit" data-id="${a.id}">Modifier</button><button class="btn ghost sm" type="button" data-act="artDel" data-id="${a.id}">Supprimer</button></div></div>`).join('')}</div>`:'<p class="empty" style="margin:0">Aucun article dans ce poste.</p>'}
+    <form class="artadd" data-artadd="${p.id}" novalidate><input name="nom" placeholder="Nouvel article" aria-label="Nouvel article"><input name="quantite" type="number" min="0" step="any" placeholder="Qté" aria-label="Quantité"><input name="unite" list="unites" placeholder="pièce" aria-label="Unité"><input name="seuil" type="number" min="0" step="any" placeholder="Alerte" aria-label="Alerte en dessous de"><button class="btn sm" type="submit">Ajouter</button></form>
+  </section>`}).join('')||'<p class="empty">Aucun poste. Ajoute ta première chambre froide, ton congélateur…</p>'}</div>
+  <p class="note">Les boutons − et + changent la quantité d’une unité ; tu peux aussi taper le nombre exact. Sous le seuil d’alerte, les responsables et le chef pâtissier reçoivent une notification.</p>`;
+}
+
+/* --- Photos, vidéos et fichiers --- */
+const DOSSIERS={labo:'Labo',boutiques:'Boutiques',produits:'Photos des flans',reseaux:'Réseaux sociaux',documents:'Documents',autre:'Autre'};
+const MAX_FICHIER=50*1024*1024;
+const tailleTxt=n=>n>=1048576?(n/1048576).toFixed(1).replace('.',',')+' Mo':Math.max(1,Math.round(n/1024))+' Ko';
+async function loadFichiers(){fichiers={loading:true,list:[]};try{const {data,error}=await sb.from('fichiers').select('*').order('created_at',{ascending:false}).limit(300);if(error)throw error;const list=data||[];
+  const miss=list.map(f=>f.path).filter(p=>!fichUrls[p]);if(miss.length){const r=await sb.storage.from('fichiers').createSignedUrls(miss,3600*6);(r.data||[]).forEach(x=>{if(x.signedUrl)fichUrls[x.path]=x.signedUrl})}
+  fichiers={list}}catch(e){fichiers={list:[],err:/fichiers/.test(e.message||'')&&/exist|relation/.test(e.message||'')?'Base pas à jour : lance etape7.sql dans Supabase.':frErr(e)}}if(route==='fichiers')render()}
+function fichiersView(){
+  if(!fichiers){loadFichiers();return `<div class="page"><p class="empty">Chargement des fichiers…</p></div>`}
+  const d=ui.fDossier||'';const list=fichiers.list.filter(f=>!d||f.dossier===d);
+  const can=f=>f.auteur===me.id||isResp(me);
+  const prev=f=>{const u=fichUrls[f.path];if(!u)return `<div class="f-ic">…</div>`;if(/^image\//.test(f.type||''))return `<img src="${esc(u)}" alt="${esc(f.nom)}" loading="lazy">`;if(/^video\//.test(f.type||''))return `<video src="${esc(u)}" controls preload="metadata" playsinline></video>`;return `<div class="f-ic">${esc((f.nom.split('.').pop()||'fichier').toUpperCase().slice(0,5))}</div>`};
+  return `<div class="page">
+  <div class="head"><div><h1>Photos et fichiers</h1><p>Photos, vidéos et documents partagés par l’équipe · 50 Mo maximum par fichier</p></div></div>
+  ${fichiers.err?`<p class="msg err">${esc(fichiers.err)}</p>`:''}
+  <section class="card"><h2>Ajouter</h2><form id="upForm" class="grid" style="gap:10px" novalidate>
+    <div class="row2"><label class="field">Dossier<select id="upDossier">${Object.entries(DOSSIERS).map(([k,v])=>`<option value="${k}"${k===(ui.fDossier||(isLabo(me)?'labo':me.role==='cm'?'reseaux':'autre'))?' selected':''}>${v}</option>`).join('')}</select></label><label class="field">Note (facultatif)<input id="upNote" maxlength="200" placeholder="Nouveau flan, facture, montage…"></label></div>
+    <label class="upzone"><input id="upFile" type="file" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx"><span><b>Choisir des photos, vidéos ou fichiers</b><small>Sur téléphone, tu peux aussi prendre une photo directement</small></span></label>
+    <p class="msg err" id="upErr" hidden></p><p class="meta" id="upProg" aria-live="polite"></p>
+    <button class="btn" type="submit">Envoyer</button></form></section>
+  <div class="chips">${[['','Tout']].concat(Object.entries(DOSSIERS)).map(([k,l])=>`<button type="button" class="chip" data-act="fDossier" data-t="${k}" aria-pressed="${k===d}" style="cursor:pointer;${k===d?'background:var(--ink);color:#fff;border-color:var(--ink)':''}">${esc(l)} <b>${fichiers.list.filter(f=>!k||f.dossier===k).length}</b></button>`).join('')}</div>
+  ${list.length?`<div class="fgrid">${list.map(f=>{const au=prof(f.auteur);return `<div class="fcard"><div class="fprev">${prev(f)}</div><div class="in"><b style="overflow-wrap:anywhere;font-size:14px">${esc(f.nom)}</b><span class="meta">${esc(DOSSIERS[f.dossier]||f.dossier)} · ${tailleTxt(f.taille||0)}</span><span class="meta">${esc(au?displayName(au):'Compte supprimé')} · ${esc(whenTxt(f.created_at))}</span>${f.note?`<span class="meta">${esc(f.note)}</span>`:''}
+    <div class="btnrow">${fichUrls[f.path]?`<a class="btn ghost sm" href="${esc(fichUrls[f.path])}" target="_blank" rel="noopener" download="${esc(f.nom)}">Ouvrir</a>`:''}${can(f)?`<button class="btn ghost sm" type="button" data-act="fDel" data-id="${f.id}">Supprimer</button>`:''}</div></div></div>`}).join('')}</div>`:'<p class="empty">Aucun fichier ici pour l’instant.</p>'}
+  <p class="note">Chacun peut supprimer ses propres fichiers ; les responsables peuvent tout supprimer. Les liens d’ouverture sont privés et expirent après quelques heures.</p></div>`;
+}
+async function envoyerFichiers(f,btn){
+  const err=$('#upErr'),prog=$('#upProg');err.hidden=true;const fail=m=>{err.textContent=m;err.hidden=false;if(btn)btn.disabled=false};
+  const files=[...($('#upFile').files||[])];if(!files.length)return fail('Choisis au moins un fichier.');
+  const big=files.find(x=>x.size>MAX_FICHIER);if(big)return fail('« '+big.name+' » dépasse 50 Mo.');
+  const dossier=$('#upDossier').value,note=$('#upNote').value.trim()||null;if(btn)btn.disabled=true;let ok=0;
+  for(const [i,file] of files.entries()){
+    prog.textContent='Envoi '+(i+1)+' / '+files.length+' : '+file.name+'…';
+    const safe=file.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-80);
+    const path=dossier+'/'+todayISO()+'/'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+'-'+safe;
+    try{const up=await sb.storage.from('fichiers').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});if(up.error)throw up.error;
+      const ins=await sb.from('fichiers').insert({path,nom:file.name,type:file.type||null,taille:file.size,dossier,note,auteur:me.id});if(ins.error){await sb.storage.from('fichiers').remove([path]);throw ins.error}ok++}
+    catch(e){prog.textContent='';return fail((/bucket|not found/i.test(e.message||'')?'Base pas à jour : lance etape7.sql dans Supabase.':frErr(e))+(ok?' ('+ok+' fichier(s) déjà envoyé(s))':''))}
+  }
+  prog.textContent='';toast(ok+' fichier'+(ok>1?'s':'')+' envoyé'+(ok>1?'s':''));ui.fDossier=dossier;if(btn)btn.disabled=false;loadFichiers();
+}
+
+/* --- Notifications --- */
+const nonLues=()=>notifs.filter(n=>!n.lu).length;
+function paintBell(){const b=$('#bell');if(!b)return;if(!me||me.role==='borne'){b.hidden=true;return}b.hidden=false;const n=nonLues();
+  b.innerHTML=`<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>${n?`<span class="bell-n">${n>9?'9+':n}</span>`:''}`;b.setAttribute('aria-label','Notifications'+(n?' : '+n+' non lue'+(n>1?'s':''):''))}
+function notifsView(){
+  return `<div class="page"><div class="head"><div><h1>Notifications</h1><p>${nonLues()?nonLues()+' non lue'+(nonLues()>1?'s':''):'Tout est lu'}</p></div>${nonLues()?'<button class="btn ghost sm" type="button" data-act="notifToutLu">Tout marquer comme lu</button>':''}</div>
+  ${notifPermCard()}
+  ${notifs.length?`<section class="card" style="gap:0">${notifs.map(n=>`<button type="button" class="notif${n.lu?'':' new'}" data-act="notifOpen" data-id="${n.id}"><span class="dot" aria-hidden="true"></span><span style="min-width:0;flex:1"><b>${esc(n.titre)}</b>${n.texte?`<small>${esc(n.texte)}</small>`:''}</span><span class="meta" style="white-space:nowrap">${esc(whenTxt(n.created_at))}</span></button>`).join('')}</section>`:'<p class="empty">Aucune notification pour l’instant.</p>'}
+  <p class="note">Tu es prévenu·e des réassorts, de la production à préparer, des livraisons, des commandes, des demandes, des publications à valider, des températures hors limites et des stocks bas, selon ton rôle. Les notifications de plus de 60 jours sont effacées.</p></div>`;
+}
+function notifPermCard(){
+  if(!('Notification' in window))return '';
+  const p=Notification.permission;
+  if(p==='granted')return '<p class="note">Les notifications sont activées sur cet appareil.</p>';
+  return `<section class="card" style="gap:8px"><h2>Recevoir les alertes sur ce téléphone</h2><p class="sub">${p==='denied'?'Les notifications sont bloquées pour cette appli. Autorise-les dans les réglages du téléphone ou du navigateur.':'Une alerte s’affiche sur le téléphone quand l’appli est ouverte ou en arrière-plan. Sur iPhone, l’appli doit être ajoutée à l’écran d’accueil.'}</p>${p==='denied'?'':'<button class="btn sm" type="button" data-act="notifPerm" style="align-self:flex-start">Activer les notifications</button>'}</section>`;
+}
+async function sysNotif(n){
+  try{if(!('Notification' in window)||Notification.permission!=='granted')return;if(!document.hidden)return;
+    const reg=await navigator.serviceWorker.ready;reg.showNotification(n.titre,{body:n.texte||'',icon:'icons/icon-192.png',badge:'icons/icon-192.png',tag:'cdf-'+n.id,data:{url:APP_URL+(n.lien||'#notifs')}})}catch(e){}
+}
+
 /* ---------- Actions ---------- */
 async function act(fn,okMsg){try{const r=await fn();if(r&&r.error)throw r.error;if(okMsg)toast(okMsg);reload();return true}catch(e){toast(frErr(e));return false}}
 function armed(t,label){if(t.dataset.armed)return true;t.dataset.armed='1';const old=t.textContent;t.textContent=label||'Confirmer ?';setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent=old}},3500);return false}
@@ -1880,6 +2007,21 @@ document.addEventListener('click',async ev=>{
       row.cle=cle;row.ordre=Math.max(0,...reseauxList.map(r=>r.ordre||0))+1;return act(()=>sb.from('reseaux').insert(row),'Réseau ajouté')}
     case 'rzDel':if(!armed(t,'Confirmer'))return;return act(()=>sb.from('reseaux').delete().eq('cle',id),'Réseau supprimé');
     case 'pubDel':if(!armed(t))return;ui.cmSel=null;return act(()=>sb.from('publications').delete().eq('id',id),'Publication supprimée');
+    case 'print':return window.print();
+    case 'posteAdd':ui.posteAdd=true;ui.posteEdit=null;return render();
+    case 'posteEdit':ui.posteEdit=id;ui.posteAdd=false;return render();
+    case 'posteCancel':ui.posteAdd=false;ui.posteEdit=null;return render();
+    case 'posteDel':{const n=stockArticles.filter(a=>a.poste_id===id).length;if(!armed(t,n?'Supprimer avec ses '+n+' article(s) ?':'Confirmer'))return;return act(()=>sb.from('postes').delete().eq('id',id),'Poste supprimé')}
+    case 'artEdit':ui.artEdit=id;return render();
+    case 'artCancel':ui.artEdit=null;return render();
+    case 'artDel':if(!armed(t))return;return act(()=>sb.from('stock_articles').delete().eq('id',id),'Article supprimé');
+    case 'stPlus':{const a=stockArticles.find(x=>x.id===id);if(!a)return;const q=Math.max(0,+a.quantite+(+t.dataset.d));a.quantite=q;const inp=t.parentNode.querySelector('input');if(inp)inp.value=q;
+      const {error}=await sb.from('stock_articles').update({quantite:q}).eq('id',id);if(error){toast(frErr(error));reload()}return}
+    case 'fDossier':ui.fDossier=t.dataset.t;return render();
+    case 'fDel':{const f=(fichiers&&fichiers.list||[]).find(x=>x.id===id);if(!f||!armed(t))return;t.disabled=true;try{const r=await sb.storage.from('fichiers').remove([f.path]);if(r.error)throw r.error;const d=await sb.from('fichiers').delete().eq('id',id);if(d.error)throw d.error;toast('Fichier supprimé');loadFichiers()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'notifOpen':{const n=notifs.find(x=>String(x.id)===id);if(!n)return;if(!n.lu){n.lu=true;sb.from('notifications').update({lu:true}).eq('id',n.id).then(()=>{},()=>{})}paintBell();if(n.lien&&n.lien!==location.hash)location.hash=n.lien;else render();return}
+    case 'notifToutLu':{notifs.forEach(n=>n.lu=true);paintBell();render();const {error}=await sb.from('notifications').update({lu:true}).eq('user_id',me.id).eq('lu',false);if(error)toast(frErr(error));return}
+    case 'notifPerm':{try{const r=await Notification.requestPermission();toast(r==='granted'?'Notifications activées':'Notifications refusées')}catch(e){}return render()}
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
     case 'pinOff':return startPinFlow('disable');
@@ -1900,6 +2042,8 @@ document.addEventListener('change',ev=>{
     if(a==='recQte'){const q=parseFloat(String(x.value).replace(',','.'))||0;act(()=>sb.from('recettes').upsert({parfum_id:x.dataset.p,ingredient_id:x.dataset.i,quantite:q}),'Recette mise à jour');return}
     if(a==='reglage'){const v=parseFloat(String(x.value).replace(',','.'));if(!isFinite(v))return;act(()=>sb.from('reglages').upsert({cle:x.dataset.k,valeur:v}),'Réglage enregistré');return}
   }
+  const ss=ev.target.closest('[data-act="stSet"]');if(ss){const v=parseFloat(String(ss.value).replace(',','.'));if(!(v>=0))return toast('Quantité invalide');act(()=>sb.from('stock_articles').update({quantite:v}).eq('id',ss.dataset.id),'Quantité enregistrée');return}
+  const pps=ev.target.closest('[data-act="ppSet"]');if(pps){const v=int(pps.value);if(!v)return;act(()=>sb.from('parametres').upsert({cle:'labo',valeur:Object.assign({},parametres.labo||{},{parts_plaque:v})}),'Plaque = '+v+' parts');return}
   if(ev.target.name==='dType'){demTypeUpdate(ev.target.closest('form'));return}
   const pst=ev.target.closest('[data-act="pubStat"]');if(pst){const row={};row[pst.dataset.k]=pst.value===''?null:int(pst.value);act(()=>sb.from('publications').update(row).eq('id',pst.dataset.id),'Résultat enregistré');return}
   const pl=ev.target.closest('[data-act="pubLien"]');if(pl){const v=pl.value.trim();if(v&&!/^https?:\/\//i.test(v))return toast('Le lien doit commencer par https://');act(()=>sb.from('publications').update({lien:v||null}).eq('id',pl.dataset.id),'Lien enregistré');return}
@@ -1921,7 +2065,7 @@ document.addEventListener('change',ev=>{
   if(a==='setLivreur')act(()=>sb.from('envois').update({livreur_id:s.value||null}).eq('id',id),'Livreur mis à jour');
 });
 document.addEventListener('input',ev=>{
-  const q=ev.target.closest('#cliQ,#ctQ');if(q){const v=q.value.trim().toLowerCase();document.querySelectorAll('#main [data-q]').forEach(r=>{r.hidden=!!v&&!r.dataset.q.includes(v)});return}
+  const q=ev.target.closest('#cliQ,#ctQ,#stQ');if(q){const v=q.value.trim().toLowerCase();document.querySelectorAll('#main [data-q]').forEach(r=>{r.hidden=!!v&&!r.dataset.q.includes(v)});return}
   const i=ev.target.closest('#clotureForm input[data-row]');if(!i)return;
   const pid=i.dataset.row,tr=i.closest('tr');const st=+tr.dataset.stock;
   const used=['v','j','c','d'].reduce((a,k)=>a+int(($('#c'+k+'-'+pid)||{}).value),0);
@@ -2066,6 +2210,27 @@ document.addEventListener('submit',async ev=>{
     const {error}=await sb.from('calendrier').insert(row);if(error)return fail('#caErr',frErr(error));
     rep.target=null;toast('Ajouté au calendrier');reload();return;
   }
+  if(f.id==='upForm')return envoyerFichiers(f,btn);
+  if(f.dataset.posteform){
+    const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');if(!d.nom.trim())return fail(err,'Donne un nom au poste.');
+    const row={nom:d.nom.trim(),type:d.type,note:d.note.trim()||null};const isNew=f.dataset.posteform==='new';
+    if(isNew)row.ordre=Math.max(0,...postes.map(p=>p.ordre||0))+1;
+    const {error}=isNew?await sb.from('postes').insert(row):await sb.from('postes').update(row).eq('id',f.dataset.posteform);
+    if(error)return fail(err,/postes/.test(error.message||'')&&/exist|relation/.test(error.message||'')?'Base pas à jour : lance etape7.sql dans Supabase.':frErr(error));
+    ui.posteAdd=false;ui.posteEdit=null;toast(isNew?'Poste ajouté':'Poste modifié');reload();return;
+  }
+  if(f.dataset.artform){
+    const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');if(!d.nom.trim())return fail(err,'Donne un nom à l’article.');
+    const se=d.seuil===''?null:parseFloat(String(d.seuil).replace(',','.'));
+    const {error}=await sb.from('stock_articles').update({nom:d.nom.trim(),poste_id:d.poste_id,unite:d.unite.trim()||'pièce',seuil:isFinite(se)?se:null,note:d.note.trim()||null}).eq('id',f.dataset.artform);
+    if(error)return fail(err,frErr(error));ui.artEdit=null;toast('Article modifié');reload();return;
+  }
+  if(f.dataset.artadd){
+    const d=Object.fromEntries(new FormData(f));if(!d.nom.trim()){if(btn)btn.disabled=false;return toast('Donne un nom à l’article')}
+    const q=parseFloat(String(d.quantite||'0').replace(',','.'))||0,se=d.seuil===''?null:parseFloat(String(d.seuil).replace(',','.'));
+    const {error}=await sb.from('stock_articles').insert({poste_id:f.dataset.artadd,nom:d.nom.trim(),quantite:Math.max(0,q),unite:d.unite.trim()||'pièce',seuil:isFinite(se)?se:null});
+    if(btn)btn.disabled=false;if(error)return toast(frErr(error));toast('Article ajouté');reload();return;
+  }
   if(f.dataset.contactform){
     const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');
     if(!d.nom.trim())return fail(err,'Indique le nom du contact.');
@@ -2132,7 +2297,7 @@ async function repSend(btn){
       else{const r=await sb.from('envois').insert({jour:target,boutique_id:w.b.id,type:'matin',statut:'valide',livreur_id:w.liv}).select('id').single();if(r.error)throw r.error;id=r.data.id}
       const r=await sb.from('envoi_lignes').insert(w.lines.map(l=>({envoi_id:id,parfum_id:l.parfum_id,quantite:l.quantite})));if(r.error)throw r.error;n++;
     }
-    toast(n+' livraison'+(n>1?'s':'')+' envoyée'+(n>1?'s':'')+' au labo');rep.target=null;reload();
+    toast(n+' livraison'+(n>1?'s':'')+' envoyée'+(n>1?'s':'')+' au labo');sb.rpc('annoncer_repartition',{p_jour:target}).then(()=>{},()=>{});rep.target=null;reload();
   }catch(e){toast(frErr(e))}finally{btn.disabled=false}
 }
 

@@ -1,6 +1,6 @@
 // Service worker : garde l'appli disponible même sans réseau.
 // Change VERSION à chaque mise à jour des fichiers pour forcer le rafraîchissement.
-const VERSION = 'cdf-v17';
+const VERSION = 'cdf-v18';
 const SHELL = [
   './', './index.html', './styles.css', './app.js', './config.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/logo.png'
@@ -45,4 +45,14 @@ self.addEventListener('fetch', e => {
       return res;
     }))
   );
+});
+
+// Clic sur une notification : ouvre (ou réutilise) l'appli sur la bonne page
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || self.registration.scope;
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if (c.url.startsWith(self.registration.scope)) { c.navigate(url); return c.focus(); } }
+    return clients.openWindow(url);
+  }));
 });
