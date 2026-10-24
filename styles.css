@@ -218,3 +218,5 @@ td img.sw.ph{margin-right:6px}
 .pphoto{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--cream)}
 .parfum.off .pphoto{filter:grayscale(.7);opacity:.55}
 .parfum .bandeau{height:auto;aspect-ratio:4/3}
+.envoi .badge{white-space:normal;max-width:100%}
+.steps span{white-space:normal}

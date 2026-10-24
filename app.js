@@ -50,12 +50,13 @@ const CAN={
   production:()=>isResp(me)||isLabo(me),
   repartition:()=>isResp(me)||me.role==='chef_patissier',
   boutiques:()=>isResp(me)||me.role==='vendeur'||me.role==='livreur',
-  journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur'
+  journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur',
+  labo:()=>isResp(me)||isLabo(me), marges:()=>isResp(me), compta:()=>me.role==='direction'
 };
 function navItems(){
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['ventes','Ventes du jour'],['parfums','Parfums'],['equipe','Équipe'],['boutiques','Points de vente']];
-  if(me.role==='chef_patissier')return [['accueil','Accueil'],['production','Production'],['repartition','Répartition de demain'],['planning','Mon planning']];
-  if(isLabo(me))return [['accueil','Accueil'],['production','Production'],['planning','Mon planning']];
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['equipe','Équipe'],['boutiques','Points de vente']]);
+  if(me.role==='chef_patissier')return [['accueil','Accueil'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning']];
+  if(isLabo(me))return [['accueil','Accueil'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning']];
   if(me.role==='vendeur')return [['accueil','Accueil'],['journee','Ma journée'],['planning','Mon planning'],['boutiques','Points de vente']];
   if(me.role==='livreur')return [['accueil','Accueil'],['tournee','Ma tournée'],['planning','Mon planning'],['boutiques','Points de vente']];
   return [['accueil','Accueil'],['planning','Mon planning']];
@@ -65,12 +66,12 @@ function navItems(){
 const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes spéciales','Événements, entreprises, acomptes',null,5)]},
-  {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan',null,3)]},
-  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions sur 7 jours','Production et équipe conseillées',null,3),T('Agenda','Dates importantes et événements',null,4)]},
-  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances',null,3),T('Heures et pointages','Préparation de la paie',null,4)]},
+  {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
+  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements',null,4)]},
+  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie',null,4)]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros',null,6),T('Réseau de franchises','Chiffres consolidés',null,6),T('Réseaux sociaux','Suivi du community manager',null,6)]}
 ];
-const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Étapes de production','Cuisson, refroidissement, garnissage',null,3),T('Traçabilité HACCP','Lots, températures, DLC',null,3)];
+const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
 const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
   vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits click & collect',null,5)],
@@ -87,6 +88,7 @@ const STEP_LBL={valide:'Validé',pret:'Prêt',en_route:'En route',livre:'Livré'
 let sb=null,user=null,me=null,loaded=false,channel=null;
 let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[],envoisAll=[],cloturesAll=[],calendrier=[];
 let rep={target:null,adj:{},adjTouched:{},qty:{},inc:{},liv:{}},meteo={};
+let lots=[],equipements=[],releves=[],receptions=[],ingredients=[],recettes=[],reglages={},compta=null;
 let route='accueil',day=todayISO(),authMode='login',justLoggedIn=false,recovering=false;
 let ui={editShop:null,addShop:false,lastInvite:null,newEnvoi:false,editParfum:null,addParfum:false};
 let locked=false,pinRec=null,mode='unlock',buf='',first='',fails=0,waitUntil=0,hiddenAt=0,pinAction=null;
@@ -240,13 +242,28 @@ async function loadAll(){
   if(pf.error)toast('Base pas à jour : lance etape2.sql dans Supabase.');
   else if(cal.error)toast('Base pas à jour : lance etape2b.sql dans Supabase.');
   if(isResp(me)){const i=await sb.from('invitations').select('*').order('created_at',{ascending:false});invitations=i.data||[]}else invitations=[];
+  if(isResp(me)||isLabo(me)){
+    const [lo,eq,re,rc]=await Promise.all([
+      sb.from('lots').select('*').gte('jour',addDays(d0,-14)).lte('jour',addDays(d0,1)).order('created_at'),
+      sb.from('equipements').select('*').order('ordre'),
+      sb.from('releves').select('*').gte('created_at',new Date(Date.now()-7*864e5).toISOString()).order('created_at'),
+      sb.from('receptions').select('*').gte('jour',addDays(todayISO(),-30)).order('jour',{ascending:false})
+    ]);
+    lots=lo.data||[];equipements=eq.data||[];releves=re.data||[];receptions=rc.data||[];
+    if(lo.error&&(route==='labo'))toast('Base pas à jour : lance etape3.sql dans Supabase.');
+  }
+  if(isResp(me)){
+    const [ig,rc,rg]=await Promise.all([sb.from('ingredients').select('*').order('nom'),sb.from('recettes').select('*'),sb.from('reglages').select('*')]);
+    ingredients=ig.data||[];recettes=rc.data||[];reglages={};(rg.data||[]).forEach(r=>reglages[r.cle]=r.valeur);
+  }
+  if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
   loaded=true;render();
 }
 let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -260,12 +277,12 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;render();window.scrollTo({top:0})});
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;render();window.scrollTo({top:0})});
 
 function render(){
   if(!user||!loaded)return;
@@ -275,7 +292,7 @@ function render(){
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
+  const V={labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
   main.innerHTML=V[route]();
 }
 
@@ -289,6 +306,7 @@ function waitView(){
 /* --- Accueil --- */
 function tileHTML(t,mine,c){
   if(t.etape)return `<div class="tile soon"><b>${esc(t.name)}</b><span>${esc(t.desc)}</span><span class="badge b-mute" style="align-self:flex-start;margin-top:4px">Étape ${t.etape}</span></div>`;
+  if(t.href==='#compta'&&me.role!=='direction')return `<div class="tile soon"><b>${esc(t.name)}</b><span>${esc(t.desc)}</span><span class="badge b-mute" style="align-self:flex-start;margin-top:4px">Réservé à la direction</span></div>`;
   const n=t.badge?c[t.badge]:0;
   return `<a class="tile${mine?' mine':''}" href="${t.href}">${n?`<span class="count" aria-label="${n} nouveau(x)">${n}</span>`:''}<b>${esc(t.name)}</b><span>${esc(t.desc)}</span></a>`;
 }
@@ -657,6 +675,229 @@ function parfumsView(){
   <p class="note">Seuls les parfums « en vente » apparaissent dans la répartition, les réassorts et les envois. En boutique, la vente se fait à la part (prix du quart) ; le prix de l’entier sert aux commandes retirées à Saint-Lazare.</p></div>`;
 }
 
+/* ================= ÉTAPE 3 ================= */
+const LOT_STEPS=[
+  {k:'prep_at',l:'Préparation'},
+  {k:'cuisson_at',l:'Sortie du four',t:'temp_four',tl:'Four (°C)'},
+  {k:'refroid_at',l:'Début refroidissement'},
+  {k:'refroid_fin_at',l:'Fin refroidissement',t:'temp_coeur',tl:'À cœur (°C)'},
+  {k:'garnissage_at',l:'Garnissage / mise en boîte'}
+];
+const REFROID_MAX_MIN=120, REFROID_MAX_T=10;
+const nextStep=l=>LOT_STEPS.find(s=>!l[s.k]);
+function refroidCheck(l){
+  if(!l.refroid_at||!l.refroid_fin_at)return null;
+  const min=Math.round((new Date(l.refroid_fin_at)-new Date(l.refroid_at))/60000);
+  const ok=min<=REFROID_MAX_MIN&&(l.temp_coeur==null||+l.temp_coeur<=REFROID_MAX_T);
+  return {min,ok};
+}
+const codeOf=nom=>String(nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()||'XXX';
+const hoursSince=ts=>ts?(Date.now()-new Date(ts))/3600000:Infinity;
+const fmtT=v=>v==null?'–':String(v).replace('.',',')+' °C';
+function lotDest(l){
+  const out={};envoisAll.filter(e=>e.produit_le===l.jour&&(e.envoi_lignes||[]).some(x=>x.parfum_id===l.parfum_id)).forEach(e=>{const q=(e.envoi_lignes||[]).filter(x=>x.parfum_id===l.parfum_id).reduce((a,x)=>a+x.quantite,0);out[e.boutique_id]=(out[e.boutique_id]||0)+q});
+  return Object.entries(out);
+}
+
+/* --- Labo · HACCP --- */
+function laboView(){
+  const tab=ui.laboTab||'lots';
+  const tabs=[['lots','Lots de production'],['temp','Températures'],['recep','Réceptions']];
+  const body=tab==='lots'?laboLots():tab==='temp'?laboTemps():laboRecep();
+  return `<div class="page">
+  <div class="head"><div><h1>Labo · HACCP</h1><p>Traçabilité de la production, des températures et des marchandises</p></div>${tab==='temp'?'':dayNav()}</div>
+  <div class="btnrow" role="tablist">${tabs.map(([k,l])=>`<button class="btn sm ${k===tab?'':'ghost'}" type="button" role="tab" aria-selected="${k===tab}" data-act="laboTab" data-t="${k}">${l}</button>`).join('')}</div>
+  ${body}</div>`;
+}
+function laboLots(){
+  const tmw=addDays(day,1);
+  const need={};envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>need[l.parfum_id]=(need[l.parfum_id]||0)+l.quantite));
+  const todays=lots.filter(l=>l.jour===day);
+  const made={};todays.forEach(l=>made[l.parfum_id]=(made[l.parfum_id]||0)+l.quantite);
+  const todo=Object.keys(need).map(id=>[id,need[id]-(made[id]||0)]).filter(x=>x[1]>0).sort((a,b)=>((parfum(a[0])||{}).ordre||0)-((parfum(b[0])||{}).ordre||0));
+  const pre=ui.lotPrefill||{};
+  const form=`<section class="card"><h2>Lancer un lot</h2>
+    ${todo.length&&day===todayISO()?`<div class="grid" style="gap:6px"><span class="meta">Encore à produire d’après les envois (aujourd’hui et demain matin) :</span><div class="chips">${todo.map(([id,q])=>{const p=parfum(id)||{};return `<button class="chip" type="button" data-act="lotPrefill" data-p="${id}" data-q="${q}" style="cursor:pointer">${sw(p)}${esc(p.nom)} <b>${q}</b></button>`}).join('')}</div></div>`:''}
+    <form id="lotForm" class="grid" style="gap:12px" novalidate>
+      <div class="row2"><label class="field">Parfum<select id="loParfum">${parfums.filter(p=>p.disponible||p.id===pre.p).map(p=>`<option value="${p.id}"${p.id===pre.p?' selected':''}>${esc(p.nom)}</option>`).join('')}</select></label>
+      <label class="field">Quantité (flans)<input id="loQte" type="number" min="1" inputmode="numeric" value="${pre.q||''}"></label></div>
+      <label class="field">N° de lot des matières premières<input id="loIngr" placeholder="Lait L2410, œufs 1234, crème C77…"><small>Pour retrouver un ingrédient en cas d’alerte sanitaire.</small></label>
+      <p class="msg err" id="loErr" hidden></p>
+      <button class="btn" type="submit">Créer le lot du ${esc(fmtDay(day))}</button>
+    </form></section>`;
+  const cards=todays.length?todays.map(l=>{
+    const p=parfum(l.parfum_id)||{},n=nextStep(l),rc=refroidCheck(l),dest=lotDest(l);
+    return `<div class="envoi${rc&&!rc.ok?' hot':''}">
+      <div class="envoi-h"><span style="display:flex;align-items:center;gap:8px">${sw(p)}<b>${esc(p.nom)}</b> <span class="badge b-mute">${l.quantite} flans</span></span><span class="meta">Lot <b>${esc(l.numero)}</b> · DLC ${esc(fmtDay(l.dlc))}</span></div>
+      <div class="steps">${LOT_STEPS.map(s=>`<span class="${l[s.k]?'done':(n&&n.k===s.k?'now':'')}">${s.l}${l[s.k]?' · '+timeOf(l[s.k]):''}${s.t&&l[s.t]!=null?' · '+fmtT(l[s.t]):''}</span>`).join('')}</div>
+      ${rc?`<span class="badge ${rc.ok?'b-good':'b-bad'}" style="align-self:flex-start">Refroidissement ${rc.min} min${l.temp_coeur!=null?' · '+fmtT(l.temp_coeur):''} · ${rc.ok?'conforme':'NON conforme (max '+REFROID_MAX_MIN+' min, ≤ '+REFROID_MAX_T+' °C)'}</span>`:''}
+      ${n?`<div class="btnrow">${n.t?`<input type="number" step="0.1" inputmode="decimal" id="lt-${l.id}" placeholder="${n.tl}" aria-label="${n.tl}" style="width:130px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit">`:''}<button class="btn sm" type="button" data-act="lotStep" data-id="${l.id}" data-k="${n.k}">${n.l} : fait</button></div>`:'<span class="badge b-good" style="align-self:flex-start">Lot terminé</span>'}
+      ${l.ingredients?`<span class="meta">Matières premières : ${esc(l.ingredients)}</span>`:''}
+      ${dest.length?`<span class="meta">Livré à : ${dest.map(([b,q])=>esc(shopName(b))+' ('+q+')').join(', ')}</span>`:''}
+      ${isResp(me)||l.created_by===me.id?`<div class="btnrow"><button class="btn ghost sm" type="button" data-act="lotDel" data-id="${l.id}">Supprimer</button></div>`:''}
+    </div>`}).join(''):'<p class="empty">Aucun lot ce jour.</p>';
+  return `<div class="grid g2" style="align-items:start">${form}<section class="card"><h2>Lots du ${esc(fmtDay(day))} <span class="badge b-mute">${todays.reduce((a,l)=>a+l.quantite,0)} flans</span></h2>${cards}
+    <p class="note">Refroidissement rapide : de la sortie du four à ${REFROID_MAX_T} °C à cœur en ${REFROID_MAX_MIN} min maximum. DLC = jour de production + 2 jours.</p></section></div>`;
+}
+function laboTemps(){
+  const eq=equipements.filter(e=>e.actif);
+  const today=releves.filter(r=>isoOf(new Date(r.created_at))===todayISO());
+  const canEq=isResp(me)||me.role==='chef_patissier';
+  return `<div class="grid g2" style="align-items:start">
+  <section class="card"><h2>Relever une température</h2>
+    ${eq.length?eq.map(e=>{const last=releves.filter(r=>r.equipement_id===e.id).sort((a,b)=>b.created_at<a.created_at?-1:1)[0];const h=hoursSince(last&&last.created_at);
+      return `<form class="envoi" data-releve="${e.id}" novalidate>
+        <div class="envoi-h"><b>${esc(e.nom)}</b><span class="meta">entre ${fmtT(e.t_min)} et ${fmtT(e.t_max)}</span></div>
+        <span class="meta">${last?`Dernier relevé : <b style="${last.conforme?'':'color:var(--bad)'}">${fmtT(last.valeur)}</b> à ${timeOf(last.created_at)}${isoOf(new Date(last.created_at))!==todayISO()?' ('+esc(fmtDay(isoOf(new Date(last.created_at))))+')':''}`:'Jamais relevé'}${h>12?' · <span class="badge b-bad">À relever</span>':''}</span>
+        <div class="btnrow"><input name="valeur" type="number" step="0.1" inputmode="decimal" placeholder="°C" aria-label="Température de ${esc(e.nom)}" style="width:110px;min-height:44px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit;font-size:16px"><input name="action" placeholder="Action corrective si hors limites" aria-label="Action corrective" style="flex:1 1 200px;min-height:44px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit"><button class="btn sm" type="submit">Enregistrer</button></div>
+        <p class="msg err" hidden></p></form>`}).join(''):'<p class="empty">Aucun équipement.</p>'}
+    <p class="note">À relever au moins deux fois par jour (ouverture et fermeture du labo). Hors limites : note l’action (réglage, produits déplacés, technicien appelé…).</p>
+    ${canEq?`<form id="eqForm" class="grid" style="gap:10px;border-top:1px solid var(--cream);padding-top:12px" novalidate><b style="font-size:14px">Ajouter un équipement</b>
+      <label class="field">Nom<input id="eqNom" placeholder="Vitrine réfrigérée, cellule de refroidissement…"></label>
+      <div class="row2"><label class="field">Mini (°C)<input id="eqMin" type="number" step="0.5" value="0"></label><label class="field">Maxi (°C)<input id="eqMax" type="number" step="0.5" value="4"></label></div>
+      <p class="msg err" id="eqErr" hidden></p><button class="btn ghost sm" type="submit">Ajouter</button></form>`:''}
+  </section>
+  <section class="card"><h2>Relevés d’aujourd’hui <span class="badge b-mute">${today.length}</span></h2>
+    ${today.length?`<div class="tbl-wrap"><table style="min-width:420px"><thead><tr><th>Heure</th><th>Équipement</th><th>Temp.</th><th>Par</th><th>Action</th></tr></thead><tbody>${today.slice().sort((a,b)=>a.created_at<b.created_at?1:-1).map(r=>{const e=equipements.find(x=>x.id===r.equipement_id)||{};return `<tr><td>${timeOf(r.created_at)}</td><td>${esc(e.nom||'?')}</td><td><span class="badge ${r.conforme?'b-good':'b-bad'}">${fmtT(r.valeur)}</span></td><td>${esc(displayName(prof(r.user_id)))}</td><td>${esc(r.action||'')}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun relevé aujourd’hui.</p>'}
+    <p class="note">Tous les relevés sont conservés dans la base, avec l’heure et la personne qui les a faits.</p>
+  </section></div>`;
+}
+function laboRecep(){
+  const list=receptions.slice().sort((a,b)=>a.jour<b.jour?1:a.jour>b.jour?-1:(a.created_at<b.created_at?1:-1));
+  return `<div class="grid g2" style="align-items:start">
+  <section class="card"><h2>Nouvelle réception</h2>
+    <form id="recForm" class="grid" style="gap:12px" novalidate>
+      <div class="row2"><label class="field">Fournisseur<input id="reFour" list="fourList"></label><label class="field">Produit<input id="reProd" list="prodList" placeholder="Lait entier, œufs…"></label></div>
+      <datalist id="fourList">${[...new Set(receptions.map(r=>r.fournisseur))].map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
+      <datalist id="prodList">${[...new Set(receptions.map(r=>r.produit).concat(ingredients.map(i=>i.nom)))].map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
+      <div class="row2"><label class="field">N° de lot fournisseur<input id="reLot"></label><label class="field">DLC / DDM<input id="reDlc" type="date"></label></div>
+      <div class="row2"><label class="field">Température à réception (°C)<input id="reTemp" type="number" step="0.1" inputmode="decimal" placeholder="Produits frais"></label><label class="field">Conformité<select id="reOk"><option value="1">Conforme</option><option value="0">Non conforme</option></select></label></div>
+      <label class="field">Remarque<input id="reNote" placeholder="Emballage abîmé, refusé, avoir demandé…"></label>
+      <p class="msg err" id="reErr" hidden></p>
+      <button class="btn" type="submit">Enregistrer la réception</button>
+    </form><p class="note">Contrôle à réception : produits frais ≤ 4 °C, emballage intact, DLC suffisante.</p></section>
+  <section class="card"><h2>30 derniers jours <span class="badge b-mute">${list.length}</span></h2>
+    ${list.length?`<div class="tbl-wrap"><table style="min-width:560px"><thead><tr><th>Date</th><th>Produit</th><th>Fournisseur</th><th>Lot</th><th>DLC</th><th>Temp.</th><th></th></tr></thead><tbody>${list.map(r=>`<tr><td>${esc(r.jour.slice(8)+'/'+r.jour.slice(5,7))}</td><td><b>${esc(r.produit)}</b>${r.note?`<small style="display:block;color:var(--muted)">${esc(r.note)}</small>`:''}</td><td>${esc(r.fournisseur)}</td><td>${esc(r.lot_fournisseur||'')}</td><td>${r.dlc?esc(r.dlc.slice(8)+'/'+r.dlc.slice(5,7)):''}</td><td>${r.temperature!=null?fmtT(r.temperature):''}</td><td><span class="badge ${r.conforme?'b-good':'b-bad'}">${r.conforme?'OK':'Non conforme'}</span></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Aucune réception enregistrée.</p>'}
+  </section></div>`;
+}
+
+/* --- Recettes et marges (responsables) --- */
+const reg=(k,d)=>reglages[k]!=null?+reglages[k]:d;
+function coutFlan(pid){
+  const rs=recettes.filter(r=>r.parfum_id===pid&&+r.quantite>0);
+  let c=0,complete=rs.length>0;
+  rs.forEach(r=>{const i=ingredients.find(x=>x.id===r.ingredient_id);if(!i||i.prix==null)complete=false;else c+=(+r.quantite)*(+i.prix)});
+  return {cout:c,complete,n:rs.length};
+}
+function margeOf(p){
+  const tva=reg('tva_vente',5.5),emb=reg('emballage_part',0);
+  const cf=coutFlan(p.id),ht=(+p.prix_quart)/(1+tva/100),cp=cf.cout/PARTS+emb;
+  return {cf,ht,cp,marge:ht-cp,taux:ht?(ht-cp)/ht:0};
+}
+function margesView(){
+  const sel=ui.margeParfum&&parfum(ui.margeParfum)?parfum(ui.margeParfum):null;
+  const since=addDays(todayISO(),-30);
+  let parts=0,mb=0,partsInc=0;
+  cloturesAll.filter(c=>c.jour>=since).forEach(c=>(c.cloture_lignes||[]).forEach(l=>{const p=parfum(l.parfum_id);if(!p)return;const m=margeOf(p);parts+=l.quarts_vendus||0;if(m.cf.complete)mb+=(l.quarts_vendus||0)*m.marge;else partsInc+=l.quarts_vendus||0}));
+  const rows=parfums.slice().sort((a,b)=>(b.disponible-a.disponible)||(a.ordre-b.ordre)).map(p=>({p,m:margeOf(p)}));
+  const editor=sel?(()=>{const rs=recettes.filter(r=>r.parfum_id===sel.id);const m=margeOf(sel);const unused=ingredients.filter(i=>!rs.some(r=>r.ingredient_id===i.id));
+    return `<section class="card"><div class="envoi-h"><h2 style="display:flex;align-items:center;gap:10px">${sw(sel)} Recette : ${esc(sel.nom)}</h2><button class="btn ghost sm" type="button" data-act="margeSel" data-id="">Fermer</button></div>
+      <p class="sub">Quantités pour <b>1 flan entier</b> (${PARTS} parts), dans l’unité de chaque ingrédient.</p>
+      ${rs.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:420px"><thead><tr><th>Ingrédient</th><th>Quantité / flan</th><th>Prix</th><th>Coût</th><th></th></tr></thead><tbody>${rs.map(r=>{const i=ingredients.find(x=>x.id===r.ingredient_id)||{};return `<tr><td>${esc(i.nom)}</td><td><input type="number" step="0.001" min="0" inputmode="decimal" data-act="recQte" data-p="${sel.id}" data-i="${r.ingredient_id}" value="${+r.quantite}" style="width:90px" aria-label="Quantité de ${esc(i.nom)}"> ${esc(i.unite||'')}</td><td>${i.prix!=null?eur(i.prix)+' / '+esc(i.unite):'<span class="badge b-gold">prix ?</span>'}</td><td class="num">${i.prix!=null?eur((+r.quantite)*(+i.prix)):'–'}</td><td><button class="btn ghost sm" type="button" data-act="recDel" data-p="${sel.id}" data-i="${r.ingredient_id}">Retirer</button></td></tr>`}).join('')}
+        <tr class="total"><td>Coût matières / flan</td><td></td><td></td><td class="num">${eur(m.cf.cout)}</td><td></td></tr></tbody></table></div>`:'<p class="empty">Recette vide.</p>'}
+      ${unused.length?`<form id="recAdd" data-p="${sel.id}" class="btnrow" novalidate><select class="inline-sel" id="raIng" aria-label="Ingrédient">${unused.map(i=>`<option value="${i.id}">${esc(i.nom)} (${esc(i.unite)})</option>`).join('')}</select><input id="raQte" type="number" step="0.001" min="0" inputmode="decimal" placeholder="Qté / flan" style="width:110px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit" aria-label="Quantité"><button class="btn sm" type="submit">Ajouter</button></form>`:''}
+    </section>`})():'';
+  return `<div class="page">
+  <div class="head"><div><h1>Recettes et marges</h1><p>Coût de revient par flan et par part, marge sur le prix de vente</p></div></div>
+  <section class="grid g4">
+    <div class="card kpi"><span class="lbl">Marge brute · 30 jours</span><span class="val num">${eur(mb)}</span><span class="hint">${partsInc?partsInc+' parts sans coût connu non comptées':'sur '+parts+' parts vendues'}</span></div>
+    <div class="card kpi"><span class="lbl">Parts vendues · 30 jours</span><span class="val num">${parts}</span><span class="hint">d’après les clôtures</span></div>
+    <label class="card kpi"><span class="lbl">Emballage par part (€ HT)</span><input type="number" step="0.01" min="0" inputmode="decimal" data-act="reglage" data-k="emballage_part" value="${reg('emballage_part',0)}" style="font-family:var(--f-title);font-size:28px;font-weight:700;border:1px solid var(--line2);border-radius:10px;padding:4px 10px;width:100%"><span class="hint">assiette, cuillère, sachet…</span></label>
+    <label class="card kpi"><span class="lbl">TVA sur la vente (%)</span><input type="number" step="0.1" min="0" inputmode="decimal" data-act="reglage" data-k="tva_vente" value="${reg('tva_vente',5.5)}" style="font-family:var(--f-title);font-size:28px;font-weight:700;border:1px solid var(--line2);border-radius:10px;padding:4px 10px;width:100%"><span class="hint">5,5 % à emporter, à confirmer avec le comptable</span></label>
+  </section>
+  ${editor}
+  <section class="card"><h2>Marge par parfum</h2>
+    <div class="tbl-wrap"><table style="min-width:680px"><thead><tr><th>Parfum</th><th>Coût / flan</th><th>Coût / part</th><th>Prix part HT</th><th>Marge / part</th><th>Taux</th><th></th></tr></thead><tbody>
+    ${rows.map(({p,m})=>`<tr style="${p.disponible?'':'opacity:.6'}"><td>${sw(p)} ${esc(p.nom)}</td><td class="num">${m.cf.n?eur(m.cf.cout)+(m.cf.complete?'':' <span class="badge b-gold">incomplet</span>'):'<span class="badge b-mute">recette vide</span>'}</td><td class="num">${m.cf.complete?eur(m.cp):'–'}</td><td class="num">${eur(m.ht)}</td><td class="num">${m.cf.complete?`<b style="${m.marge<0?'color:var(--bad)':''}">${eur(m.marge)}</b>`:'–'}</td><td class="num">${m.cf.complete?Math.round(m.taux*100)+' %':'–'}</td><td><button class="btn ghost sm" type="button" data-act="margeSel" data-id="${p.id}">Recette</button></td></tr>`).join('')}
+    </tbody></table></div></section>
+  <section class="card"><h2>Ingrédients <span class="badge b-mute">${ingredients.length}</span></h2>
+    <p class="sub">Prix HT par unité (kg, litre ou pièce). Un ingrédient sans prix rend la marge du parfum « incomplète ».</p>
+    <div class="tbl-wrap"><table class="ptable" style="min-width:560px"><thead><tr><th>Ingrédient</th><th>Unité</th><th>Prix HT</th><th>Fournisseur</th></tr></thead><tbody>
+    ${ingredients.map(i=>`<tr><td><b>${esc(i.nom)}</b></td><td><select class="inline-sel" data-act="ingUp" data-id="${i.id}" data-k="unite" aria-label="Unité">${['kg','L','pièce'].map(u=>`<option${u===i.unite?' selected':''}>${u}</option>`).join('')}</select></td><td><input type="number" step="0.01" min="0" inputmode="decimal" data-act="ingUp" data-id="${i.id}" data-k="prix" value="${i.prix??''}" placeholder="?" style="width:90px" aria-label="Prix de ${esc(i.nom)}"> €</td><td><input data-act="ingUp" data-id="${i.id}" data-k="fournisseur" value="${esc(i.fournisseur||'')}" style="width:100%;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit" aria-label="Fournisseur de ${esc(i.nom)}"></td></tr>`).join('')}
+    </tbody></table></div>
+    <form id="ingForm" class="btnrow" novalidate><input id="inNom" placeholder="Nouvel ingrédient" style="flex:1 1 200px;min-height:44px;border:1px solid var(--line2);border-radius:12px;padding:0 12px;font:inherit" aria-label="Nom de l’ingrédient"><select class="inline-sel" id="inUnite" aria-label="Unité"><option>kg</option><option>L</option><option>pièce</option></select><button class="btn sm" type="submit">Ajouter</button></form>
+  </section></div>`;
+}
+
+/* --- Comptabilité (direction) --- */
+const CAT_DEP=['Matières premières','Emballages','Loyer et charges','Salaires','Charges sociales (URSSAF)','Énergie','Transport et livraison','Marketing','Équipement et entretien','Impôts et taxes','Banque et assurances','Autre'];
+const CAT_REC=['Commandes (flans entiers)','Événements et entreprises','Franchises et redevances','Autre'];
+const monthOf=d=>d.slice(0,7);
+const monthLabel=m=>{const [y,mo]=m.split('-').map(Number);return MOIS[mo-1]+' '+y};
+const lastOfMonth=m=>{const [y,mo]=m.split('-').map(Number);return isoOf(new Date(y,mo,0))};
+async function loadCompta(m){
+  compta={mois:m,loading:true,clotures:[],ecritures:[],echeances:[]};
+  const [c,e,ech]=await Promise.all([
+    sb.from('clotures').select('jour, cloture_lignes(parfum_id,quarts_vendus)').gte('jour',m+'-01').lte('jour',lastOfMonth(m)),
+    sb.from('ecritures').select('*').gte('jour',m+'-01').lte('jour',lastOfMonth(m)).order('jour'),
+    sb.from('ecritures').select('*').eq('paye',false).order('echeance')
+  ]);
+  if(e.error){toast(/ecritures/.test(e.error.message||'')?'Base pas à jour : lance etape3.sql dans Supabase.':frErr(e.error))}
+  if(compta.mois!==m)return;
+  compta={mois:m,loading:false,clotures:c.data||[],ecritures:e.data||[],echeances:ech.data||[]};
+  if(route==='compta')render();
+}
+const ht=(ttc,tva)=>(+ttc)/(1+(+tva)/100);
+function comptaView(){
+  const m=ui.mois||monthOf(todayISO());
+  if(!compta||compta.mois!==m){loadCompta(m);return `<div class="page"><p class="empty">Chargement de ${esc(monthLabel(m))}…</p></div>`}
+  const tvaV=reg('tva_vente',5.5);
+  const caDay={};compta.clotures.forEach(c=>{caDay[c.jour]=(caDay[c.jour]||0)+(c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)});
+  const caTTC=Object.values(caDay).reduce((a,b)=>a+b,0),caHT=caTTC/(1+tvaV/100);
+  const rec=compta.ecritures.filter(e=>e.sens==='recette'),dep=compta.ecritures.filter(e=>e.sens==='depense');
+  const recTTC=rec.reduce((a,e)=>a+(+e.montant_ttc),0),recHT=rec.reduce((a,e)=>a+ht(e.montant_ttc,e.tva),0);
+  const depTTC=dep.reduce((a,e)=>a+(+e.montant_ttc),0),depHT=dep.reduce((a,e)=>a+ht(e.montant_ttc,e.tva),0);
+  const resultat=caHT+recHT-depHT;
+  const tvaColl=(caTTC-caHT)+(recTTC-recHT),tvaDed=depTTC-depHT;
+  const cat={};dep.forEach(e=>cat[e.categorie]=(cat[e.categorie]||0)+(+e.montant_ttc));
+  const catArr=Object.entries(cat).sort((a,b)=>b[1]-a[1]);const cmax=Math.max(1,...catArr.map(x=>x[1]));
+  // graphique CA par jour
+  const last=+lastOfMonth(m).slice(8),vals=Array.from({length:last},(_,i)=>caDay[m+'-'+pad(i+1)]||0),vmax=Math.max(1,...vals);
+  const step=vmax<=200?50:vmax<=500?100:vmax<=2000?500:vmax<=5000?1000:2000,top=Math.ceil(vmax/step)*step;
+  const W=760,H=200,L=44,B=24,bw=(W-L-6)/last;
+  let svg='';for(let v=0;v<=top;v+=step){const y=8+(H-8-B)*(1-v/top);svg+=`<line x1="${L}" x2="${W-4}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`}
+  vals.forEach((v,i)=>{const h=(H-8-B)*(v/top),x=L+i*bw+bw*.15;if(v)svg+=`<rect x="${x}" y="${H-B-h}" width="${bw*.7}" height="${Math.max(h,1)}" rx="2" fill="var(--gold)"><title>${i+1} : ${eur(v)}</title></rect>`;if((i+1)%5===1||i+1===last)svg+=`<text x="${x+bw*.35}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${i+1}</text>`});
+  const ech=compta.echeances.slice(0,10);
+  return `<div class="page">
+  <div class="head"><div><h1>Comptabilité</h1><p>Réservée à la direction · montants estimés, à valider avec le comptable</p></div>
+    <div class="daynav" role="group" aria-label="Choisir le mois"><button class="iconbtn" type="button" data-act="mois" data-d="-1" aria-label="Mois précédent">‹</button><b>${esc(monthLabel(m))}</b><button class="iconbtn" type="button" data-act="mois" data-d="1" aria-label="Mois suivant">›</button></div></div>
+  <section class="grid g4">
+    <div class="card kpi"><span class="lbl">CA boutiques (TTC)</span><span class="val num">${eur(caTTC)}</span><span class="hint">${compta.clotures.length} clôture${compta.clotures.length>1?'s':''} · ${eur(caHT)} HT</span></div>
+    <div class="card kpi"><span class="lbl">Autres recettes (TTC)</span><span class="val num">${eur(recTTC)}</span><span class="hint">commandes, événements…</span></div>
+    <div class="card kpi"><span class="lbl">Dépenses (TTC)</span><span class="val num">${eur(depTTC)}</span><span class="hint">${eur(depHT)} HT</span></div>
+    <div class="card kpi"><span class="lbl">Résultat estimé (HT)</span><span class="val num" style="color:${resultat>=0?'var(--good)':'var(--bad)'}">${eur(resultat)}</span><span class="hint">TVA à reverser ≈ ${eur(tvaColl-tvaDed)}</span></div>
+  </section>
+  <section class="card"><h2>Chiffre d’affaires par jour</h2><div class="tbl-wrap"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:520px;height:auto;display:block" role="img" aria-label="Chiffre d’affaires TTC par jour">${svg}</svg></div><p class="note">CA calculé avec les prix actuels des parfums × parts vendues des clôtures.</p></section>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><h2>Ajouter une écriture</h2>
+      <form id="ecrForm" class="grid" style="gap:12px" novalidate>
+        <div class="row2"><label class="field">Type<select id="ecSens"><option value="depense">Dépense</option><option value="recette">Recette</option></select></label><label class="field">Date<input id="ecJour" type="date" value="${monthOf(todayISO())===m?todayISO():m+'-01'}"></label></div>
+        <div class="row2"><label class="field">Catégorie<select id="ecCat">${CAT_DEP.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label><label class="field">Fournisseur / client<input id="ecTiers"></label></div>
+        <label class="field">Libellé<input id="ecLib" placeholder="Facture lait septembre, loyer Saint-Lazare…"></label>
+        <div class="row2"><label class="field">Montant TTC (€)<input id="ecMt" type="number" step="0.01" min="0" inputmode="decimal"></label><label class="field">TVA<select id="ecTva"><option value="20">20 %</option><option value="10">10 %</option><option value="5.5">5,5 %</option><option value="0">0 % (salaires, URSSAF…)</option></select></label></div>
+        <div class="row2"><label class="field">Échéance (si à payer)<input id="ecEch" type="date"></label><label class="field">Statut<select id="ecPaye"><option value="1">Payé / encaissé</option><option value="0">À payer</option></select></label></div>
+        <p class="msg err" id="ecErr" hidden></p><button class="btn" type="submit">Enregistrer</button></form></section>
+    <div class="grid" style="gap:16px">
+      <section class="card"><h2>Échéances à venir <span class="badge ${ech.length?'b-gold':'b-mute'}">${compta.echeances.length}</span></h2>
+        ${ech.length?ech.map(e=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span><b>${esc(e.libelle)}</b><small style="display:block;color:var(--muted)">${e.echeance?(e.echeance<todayISO()?'<span style="color:var(--bad)">En retard · </span>':'')+esc(fmtDay(e.echeance)):'Sans échéance'} · ${eur(e.montant_ttc)}</small></span><button class="btn ghost sm" type="button" data-act="ecrPaye" data-id="${e.id}">Marquer payé</button></div>`).join(''):'<p class="empty">Rien à payer.</p>'}</section>
+      <section class="card"><h2>Dépenses par catégorie</h2>${catArr.length?`<div class="bars">${catArr.map(([c,v])=>`<div class="bar" style="grid-template-columns:minmax(0,11rem) minmax(0,1fr) 6rem"><span class="name">${esc(c)}</span><span class="track"><span class="fill" style="display:block;width:${v/cmax*100}%"></span></span><span class="n num">${eur(v)}</span></div>`).join('')}</div>`:'<p class="empty">Aucune dépense ce mois.</p>'}</section>
+    </div>
+  </div>
+  <section class="card"><h2>Écritures de ${esc(monthLabel(m))} <span class="badge b-mute">${compta.ecritures.length}</span></h2>
+    ${compta.ecritures.length?`<div class="tbl-wrap"><table style="min-width:640px"><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>TTC</th><th>TVA</th><th>Statut</th><th></th></tr></thead><tbody>${compta.ecritures.map(e=>`<tr><td>${esc(e.jour.slice(8)+'/'+e.jour.slice(5,7))}</td><td><b>${esc(e.libelle)}</b>${e.tiers?`<small style="display:block;color:var(--muted)">${esc(e.tiers)}</small>`:''}</td><td><span class="badge ${e.sens==='recette'?'b-good':'b-mute'}">${e.sens==='recette'?'Recette':'Dépense'}</span> ${esc(e.categorie)}</td><td class="num">${e.sens==='recette'?'+':'−'}${eur(e.montant_ttc)}</td><td class="num">${String(e.tva).replace('.',',')} %</td><td>${e.paye?'<span class="badge b-good">Payé</span>':'<span class="badge b-gold">À payer</span>'}</td><td><button class="btn ghost sm" type="button" data-act="ecrDel" data-id="${e.id}">Supprimer</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Aucune écriture ce mois.</p>'}
+  </section></div>`;
+}
+
 /* --- Équipe --- */
 function teamView(){
   const waiting=profiles.filter(p=>p.role==='aucun'&&p.actif);
@@ -798,6 +1039,18 @@ document.addEventListener('click',async ev=>{
     case 'calDel':if(!armed(t))return;rep.target=null;return act(()=>sb.from('calendrier').delete().eq('id',id),'Retiré du calendrier');
     case 'repReset':rep.target=null;return render();
     case 'repSend':return repSend(t);
+    case 'laboTab':ui.laboTab=t.dataset.t;return render();
+    case 'lotPrefill':ui.lotPrefill={p:t.dataset.p,q:+t.dataset.q};render();const el=$('#loIngr');if(el)el.focus();return;
+    case 'lotStep':{const l=lots.find(x=>x.id===id);if(!l)return;const st=LOT_STEPS.find(s=>s.k===t.dataset.k);const row={};row[st.k]=new Date().toISOString();
+      if(st.t){const v=parseFloat(String(($('#lt-'+id)||{}).value||'').replace(',','.'));if(!isFinite(v))return toast('Indique la température : '+st.tl);row[st.t]=v;
+        if(st.t==='temp_coeur'&&v>REFROID_MAX_T)toast('Attention : plus de '+REFROID_MAX_T+' °C à cœur');}
+      return act(()=>sb.from('lots').update(row).eq('id',id),st.l+' : enregistré')}
+    case 'lotDel':if(!armed(t))return;return act(()=>sb.from('lots').delete().eq('id',id),'Lot supprimé');
+    case 'margeSel':ui.margeParfum=id||null;render();if(id)window.scrollTo({top:0,behavior:'smooth'});return;
+    case 'recDel':return act(()=>sb.from('recettes').delete().eq('parfum_id',t.dataset.p).eq('ingredient_id',t.dataset.i),'Ingrédient retiré');
+    case 'mois':{const [y,mo]=(ui.mois||monthOf(todayISO())).split('-').map(Number);const d=new Date(y,mo-1+(+t.dataset.d),1);ui.mois=isoOf(d).slice(0,7);compta=null;return render()}
+    case 'ecrPaye':{const r=await act(()=>sb.from('ecritures').update({paye:true}).eq('id',id),'Marqué payé');if(r&&compta)loadCompta(compta.mois);return}
+    case 'ecrDel':{if(!armed(t))return;const r=await act(()=>sb.from('ecritures').delete().eq('id',id),'Écriture supprimée');if(r&&compta)loadCompta(compta.mois);return}
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
     case 'pinOff':return startPinFlow('disable');
@@ -812,6 +1065,13 @@ document.addEventListener('change',ev=>{
     if(k==='adj'){rep.adj[b]=parseInt(r.value,10)||0;rep.adjTouched[b]=true;const q=rep.qty[b];if(q)Object.keys(q).forEach(p=>{if(q[p+'_auto'])delete q[p]});return render()}
     if(k==='qty'){rep.qty[b]=rep.qty[b]||{};rep.qty[b][r.dataset.p]=int(r.value);return render()}
   }
+  const x=ev.target.closest('[data-act="ingUp"],[data-act="recQte"],[data-act="reglage"]');
+  if(x){const a=x.dataset.act;
+    if(a==='ingUp'){const k=x.dataset.k,row={};row[k]=k==='prix'?(x.value===''?null:parseFloat(String(x.value).replace(',','.'))):(x.value.trim()||null);if(k==='unite')row[k]=x.value;act(()=>sb.from('ingredients').update(row).eq('id',x.dataset.id),'Ingrédient mis à jour');return}
+    if(a==='recQte'){const q=parseFloat(String(x.value).replace(',','.'))||0;act(()=>sb.from('recettes').upsert({parfum_id:x.dataset.p,ingredient_id:x.dataset.i,quantite:q}),'Recette mise à jour');return}
+    if(a==='reglage'){const v=parseFloat(String(x.value).replace(',','.'));if(!isFinite(v))return;act(()=>sb.from('reglages').upsert({cle:x.dataset.k,valeur:v}),'Réglage enregistré');return}
+  }
+  const es=ev.target.closest('#ecSens');if(es){const c=$('#ecCat');if(c)c.innerHTML=(es.value==='recette'?CAT_REC:CAT_DEP).map(v=>`<option>${esc(v)}</option>`).join('');const tv=$('#ecTva');if(tv&&es.value==='recette')tv.value='5.5';return}
   const ca=ev.target.closest('input[data-act="calAdj"]');
   if(ca){act(()=>sb.from('calendrier').update({ajustement:parseInt(ca.value,10)||0}).eq('id',ca.dataset.id),'Effet mis à jour');rep.target=null;return}
   const s=ev.target.closest('select[data-act]');if(!s)return;
@@ -882,6 +1142,49 @@ document.addEventListener('submit',async ev=>{
     const r=await sb.from('cloture_lignes').upsert(lines.map(l=>Object.assign({cloture_id:data.id},l)),{onConflict:'cloture_id,parfum_id'});
     if(r.error)return fail('#clErr',frErr(r.error));
     toast('Clôture enregistrée');reload();return;
+  }
+  if(f.id==='lotForm'){
+    const pid=$('#loParfum').value,q=int($('#loQte').value);if(!q)return fail('#loErr','Indique la quantité de flans.');
+    const p=parfum(pid)||{},n=lots.filter(l=>l.jour===day&&l.parfum_id===pid).length+1;
+    const numero=day.slice(2).replace(/-/g,'')+'-'+codeOf(p.nom)+'-'+n;
+    const {error}=await sb.from('lots').insert({numero,jour:day,parfum_id:pid,quantite:q,dlc:addDays(day,DUREE-1),ingredients:$('#loIngr').value.trim()||null});
+    if(error)return fail('#loErr',/lots_numero_key|duplicate/.test(error.message||'')?'Ce numéro de lot existe déjà : réessaie.':frErr(error));
+    ui.lotPrefill=null;toast('Lot '+numero+' créé');reload();return;
+  }
+  if(f.dataset.releve){
+    const err=f.querySelector('.msg'),e=equipements.find(x=>x.id===f.dataset.releve);
+    const v=parseFloat(String(f.elements.valeur.value).replace(',','.'));if(!isFinite(v))return fail(err,'Indique la température.');
+    const ok=v>=+e.t_min&&v<=+e.t_max,action=f.elements.action.value.trim();
+    if(!ok&&!action)return fail(err,'Hors limites : indique l’action corrective.');
+    const {error}=await sb.from('releves').insert({equipement_id:e.id,valeur:v,conforme:ok,action:action||null});
+    if(error)return fail(err,frErr(error));toast(ok?'Relevé enregistré':'Relevé hors limites enregistré');reload();return;
+  }
+  if(f.id==='eqForm'){
+    const nom=$('#eqNom').value.trim(),mi=parseFloat($('#eqMin').value),ma=parseFloat($('#eqMax').value);
+    if(!nom)return fail('#eqErr','Donne un nom.');if(!(ma>mi))return fail('#eqErr','Le maxi doit être au-dessus du mini.');
+    const {error}=await sb.from('equipements').insert({nom,t_min:mi,t_max:ma,ordre:equipements.length+1});if(error)return fail('#eqErr',frErr(error));
+    toast('Équipement ajouté');reload();return;
+  }
+  if(f.id==='recForm'){
+    const four=$('#reFour').value.trim(),prod=$('#reProd').value.trim();if(!four||!prod)return fail('#reErr','Indique le fournisseur et le produit.');
+    const t=$('#reTemp').value===''?null:parseFloat(String($('#reTemp').value).replace(',','.'));
+    const {error}=await sb.from('receptions').insert({fournisseur:four,produit:prod,lot_fournisseur:$('#reLot').value.trim()||null,dlc:$('#reDlc').value||null,temperature:isFinite(t)?t:null,conforme:$('#reOk').value==='1',note:$('#reNote').value.trim()||null});
+    if(error)return fail('#reErr',frErr(error));toast('Réception enregistrée');reload();return;
+  }
+  if(f.id==='ingForm'){
+    const nom=$('#inNom').value.trim();if(!nom){if(btn)btn.disabled=false;return toast('Donne un nom à l’ingrédient')}
+    await act(()=>sb.from('ingredients').insert({nom,unite:$('#inUnite').value}),'Ingrédient ajouté');if(btn)btn.disabled=false;return;
+  }
+  if(f.id==='recAdd'){
+    const q=parseFloat(String($('#raQte').value).replace(',','.'));if(!(q>0)){if(btn)btn.disabled=false;return toast('Indique la quantité pour 1 flan')}
+    await act(()=>sb.from('recettes').upsert({parfum_id:f.dataset.p,ingredient_id:$('#raIng').value,quantite:q}),'Ingrédient ajouté à la recette');if(btn)btn.disabled=false;return;
+  }
+  if(f.id==='ecrForm'){
+    const mt=parseFloat(String($('#ecMt').value).replace(',','.')),lib=$('#ecLib').value.trim(),jour=$('#ecJour').value;
+    if(!lib)return fail('#ecErr','Indique un libellé.');if(!(mt>=0)||$('#ecMt').value==='')return fail('#ecErr','Indique le montant TTC.');if(!jour)return fail('#ecErr','Indique la date.');
+    const row={sens:$('#ecSens').value,jour,categorie:$('#ecCat').value,libelle:lib,tiers:$('#ecTiers').value.trim()||null,montant_ttc:mt,tva:parseFloat($('#ecTva').value),echeance:$('#ecEch').value||null,paye:$('#ecPaye').value==='1'};
+    const {error}=await sb.from('ecritures').insert(row);if(error)return fail('#ecErr',frErr(error));
+    toast('Écriture enregistrée');if(monthOf(jour)!==ui.mois&&ui.mois){ui.mois=monthOf(jour)}loadCompta(ui.mois||monthOf(todayISO()));return;
   }
   if(f.id==='calForm'){
     const row={libelle:$('#caLib').value.trim(),type:$('#caType').value,debut:$('#caDeb').value,fin:$('#caFin').value||$('#caDeb').value,zone:$('#caZone').value,ajustement:parseInt($('#caAdj').value,10)||0};
