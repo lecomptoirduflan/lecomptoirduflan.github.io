@@ -246,3 +246,5 @@ td img.sw.ph{margin-right:6px}
 .agday.today .agn{align-self:flex-start;padding:1px 7px;border-radius:999px;background:var(--ink);color:var(--gold-l)}
 .kpi{display:flex;flex-direction:column;gap:4px}
 .hcell.ok{border-color:var(--good);background:var(--good-bg)}
+.lastmod{margin:-10px 0 0;font-size:12.5px;color:var(--muted);min-height:1.2em}
+.lastmod b{color:var(--text);font-weight:600}

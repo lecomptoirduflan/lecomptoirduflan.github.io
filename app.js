@@ -264,7 +264,7 @@ async function loadAll(){
     ingredients=ig.data||[];recettes=rc.data||[];reglages={};(rg.data||[]).forEach(r=>reglages[r.cle]=r.valeur);
   }
   if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
-  loaded=true;render();
+  loaded=true;render();refreshLastMod();if(route==='tableau'&&isResp(me))loadJournal();
 }
 let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
@@ -284,13 +284,21 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
 const ROUTES=['pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;render();window.scrollTo({top:0})});
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
+/* --- Dernière modification (journal) --- */
+const ROUTE_TABLES={accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles']};
+const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda'};
+const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
+let lastMod={},lastModT=null;
+function whenTxt(ts){const d=new Date(ts),t=todayISO(),k=isoOf(d);return (k===t?'aujourd’hui':k===addDays(t,-1)?'hier':'le '+d.getDate()+' '+MOIS[d.getMonth()])+' à '+timeOf(ts)}
+function refreshLastMod(){clearTimeout(lastModT);lastModT=setTimeout(async()=>{if(!sb||!me||me.role==='borne')return;const r=route;try{const {data,error}=await sb.rpc('derniere_modif',{p_tables:ROUTE_TABLES[r]||null});if(error)return;lastMod[r]=data||false;if(route===r)paintLastMod()}catch(e){}},400)}
+function paintLastMod(){const el=document.getElementById('lastMod');const m=lastMod[route];if(!el)return;el.innerHTML=m?`Dernière modification : <b>${esc(m.nom)}</b> · ${esc(whenTxt(m.at))} · ${esc(ACT_LBL[m.action]||'')} (${esc(TABLE_LBL[m.table]||m.table)})`:m===false?'Aucune modification enregistrée pour l’instant.':''}
 function render(){
   if(!user||!loaded)return;
   const main=$('#main'),nav=$('#nav');
@@ -304,6 +312,7 @@ function render(){
   if(locked&&!pinAction){main.innerHTML='';return}
   const V={pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
   main.innerHTML=V[route]();
+  const hd=main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
 }
 
 function waitView(){
@@ -339,6 +348,10 @@ function homeView(){
 }
 
 /* --- Tableau de bord --- */
+let journalData=null;
+async function loadJournal(){try{const {data,error}=await sb.rpc('journal_recent',{p_limit:12});if(error)return;journalData=data||[];if(route==='tableau')render()}catch(e){}}
+function journalHTML(){if(journalData===null)return '<p class="empty">Chargement…</p>';if(!journalData.length)return '<p class="empty">Rien pour l’instant.</p>';
+  return `<div style="display:flex;flex-direction:column">${journalData.map(j=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--cream);font-size:13.5px;flex-wrap:wrap"><span><b>${esc(j.nom)}</b> · ${esc(ACT_LBL[j.action]||'')} · ${esc(TABLE_LBL[j.table]||j.table)}</span><span style="color:var(--muted)">${esc(whenTxt(j.at))}</span></div>`).join('')}</div>`}
 function dashView(){
   const act=profiles.filter(p=>p.actif&&!['aucun','borne'].includes(p.role));
   const waiting=profiles.filter(p=>p.role==='aucun'&&p.actif);
@@ -373,6 +386,7 @@ function dashView(){
       <a class="link" href="#ventes">Détail des ventes</a></section>
     <div class="grid" style="gap:16px;align-content:start">
       <section class="card"><h2>À faire</h2>${todo.length?`<ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px">${todo.join('')}</ul>`:'<p class="empty">Rien à signaler.</p>'}</section>
+      <section class="card"><h2>Dernières modifications</h2>${journalHTML()}</section>
       <section class="card"><h2>Équipe par rôle</h2><div class="bars">${arr.map(([k,n])=>`<div class="bar"><span class="name">${esc(ROLES[k].label)}</span><span class="track"><span class="fill" style="display:block;width:${n/max*100}%"></span></span><span class="n num">${n}</span></div>`).join('')}</div></section>
     </div>
   </div></div>`;
@@ -1195,7 +1209,7 @@ function teamView(){
         ${waiting.length?waiting.map(p=>`<div class="grid" style="gap:8px;padding:10px 0;border-top:1px solid var(--cream)">
           <div class="who"><span class="avatar">${esc(initials(p))}</span><span>${esc(p.prenom?p.prenom+' '+(p.nom||''):'Sans prénom')}<small>${esc(p.email)}</small></span></div>
           <select class="inline-sel" id="w-role-${p.id}" aria-label="Rôle">${roleOptions('aucun',true)}</select>
-          <div class="btnrow"><button class="btn sm" type="button" data-act="approve" data-id="${p.id}">Valider</button><button class="btn sm danger" type="button" data-act="toggle" data-id="${p.id}">Refuser l’accès</button></div></div>`).join(''):'<p class="empty">Aucun compte en attente.</p>'}
+          <div class="btnrow"><button class="btn sm" type="button" data-act="approve" data-id="${p.id}">Valider</button><button class="btn sm danger" type="button" data-act="delCompte" data-id="${p.id}">Supprimer le compte</button></div></div>`).join(''):'<p class="empty">Aucun compte en attente.</p>'}
       </section>
       <section class="card"><h2>Invitations en attente <span class="badge b-mute">${pend.length}</span></h2>
         ${pend.length?pend.map(i=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span style="min-width:0;overflow-wrap:anywhere">${esc(i.email)}<small style="display:block;color:var(--muted);font-size:12px">${esc(roleLabel(i.role))}</small></span><button class="btn ghost sm" type="button" data-act="delInvite" data-email="${esc(i.email)}">Annuler</button></div>`).join(''):'<p class="empty">Aucune invitation en attente.</p>'}
@@ -1206,8 +1220,9 @@ function teamView(){
     <div class="tbl-wrap"><table style="min-width:480px"><thead><tr><th>Membre</th><th>Rôle</th><th>Accès</th></tr></thead><tbody>
     ${team.map(p=>{const self=p.id===me.id;return `<tr><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(p))}</span><span>${esc(displayName(p))}${self?' (toi)':''}<small>${esc(p.email)}</small></span></div></td>
       <td><select data-act="setRole" data-id="${p.id}" aria-label="Rôle"${self?' disabled':''}>${roleOptions(p.role)}</select>${p.role==='borne'?`<select data-act="setBorneLieu" data-id="${p.id}" aria-label="Lieu de la borne" style="margin-top:6px;display:block"><option value="">Lieu : Labo</option>${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}"${b.id===p.boutique_id?' selected':''}>Lieu : ${esc(b.nom)}</option>`).join('')}</select>`:''}</td>
-      <td>${self?'<span class="badge b-good">Actif</span>':`<button class="btn sm ${p.actif?'ghost':''}" type="button" data-act="toggle" data-id="${p.id}">${p.actif?'Désactiver':'Réactiver'}</button>`}</td></tr>`}).join('')}
-    </tbody></table></div></section></div>`;
+      <td>${self?'<span class="badge b-good">Actif</span>':`<div class="btnrow"><button class="btn sm ${p.actif?'ghost':''}" type="button" data-act="toggle" data-id="${p.id}">${p.actif?'Désactiver':'Réactiver'}</button>${p.role==='direction'&&me.role!=='direction'?'':`<button class="btn sm danger" type="button" data-act="delCompte" data-id="${p.id}">Supprimer</button>`}</div>`}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <p class="note"><b>Désactiver</b> bloque l’accès mais garde tout (réactivable). <b>Supprimer</b> efface le compte, son planning et son code de pointage ; ses heures pointées sont archivées pour la paie. L’adresse e-mail pourra être réinvitée.</p></section></div>`;
 }
 
 /* --- Points de vente --- */
@@ -1272,6 +1287,8 @@ document.addEventListener('click',async ev=>{
     case 'copyInvite':{const el=$('#inviteText');if(el)copyText(el.textContent);return}
     case 'delInvite':return act(()=>sb.from('invitations').delete().eq('email',t.dataset.email),'Invitation annulée');
     case 'approve':{const r=$('#w-role-'+id).value;if(r==='aucun')return toast('Choisis d’abord un rôle');return act(()=>sb.from('profiles').update({role:r}).eq('id',id),'Accès ouvert')}
+    case 'delCompte':{const u=prof(id);if(!u)return;if(!armed(t,'Confirmer la suppression'))return;t.disabled=true;
+      try{const {error}=await sb.rpc('supprimer_compte',{p_user:id});if(error)throw error;toast('Compte supprimé : '+displayName(u));reload()}catch(e){t.disabled=false;toast(/supprimer_compte/.test(e.message||'')?'Base pas à jour : lance etape4d.sql dans Supabase.':frErr(e))}return}
     case 'toggle':{const p=prof(id);if(!p)return;if(p.actif&&!armed(t))return;return act(()=>sb.from('profiles').update({actif:!p.actif}).eq('id',id),p.actif?'Accès désactivé':'Accès réactivé')}
     case 'addShop':ui.addShop=true;ui.editShop=null;return render();
     case 'editShop':ui.editShop=id;ui.addShop=false;return render();
