@@ -256,3 +256,54 @@ td img.sw.ph{margin-right:6px}
 .stepper button:disabled{opacity:.35;cursor:default}
 .stepper b{font-size:20px;min-width:2ch;text-align:center}
 @media (max-width:900px){#cmdGrid{grid-template-columns:minmax(0,1fr)!important}#cmdGrid>.card{position:static!important}}
+
+/* ---------- Étape 6 ---------- */
+.g21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+@media (max-width:900px){.g21{grid-template-columns:minmax(0,1fr)}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.field textarea{font:inherit;font-size:16px;font-weight:400;color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:12px;padding:10px 14px;width:100%;resize:vertical}
+.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-bg)}
+.search{font:inherit;font-size:15px;border:1px solid var(--line2);border-radius:999px;padding:0 16px;min-height:42px;min-width:0;width:min(340px,100%);background:#fff}
+.search:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-bg)}
+[data-q][hidden]{display:none!important}
+.agday.sel{border:2px solid var(--gold-d)}
+.parfum.off{opacity:.6}
+/* Travaillons ensemble */
+#ensembleBox{width:100%;max-width:520px;display:flex;flex-direction:column;gap:14px}
+.auth-main #ensembleBox form{max-width:none}
+.dtypes{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.dtype{display:flex;cursor:pointer}
+.dtype input{position:absolute;opacity:0;pointer-events:none}
+.dtype span{flex:1;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;background:#fff}
+.dtype b{font-size:14px;color:var(--ink)}
+.dtype small{font-size:12.5px;color:var(--muted)}
+.dtype input:checked+span{border-color:var(--gold);background:var(--gold-bg);box-shadow:0 0 0 1px var(--gold)}
+.dtype input:focus-visible+span{outline:2px solid var(--gold-d);outline-offset:2px}
+/* Pages du site (clients) */
+.site{gap:28px}
+.s-kicker{font-family:var(--f-title);text-transform:uppercase;letter-spacing:.12em;font-size:12.5px;font-weight:600;color:var(--gold-d)}
+.s-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center;background:var(--ink);color:#FFF8EC;border-radius:24px;padding:28px;overflow:hidden}
+.s-hero h1{font-size:clamp(34px,5vw,54px);line-height:1.05;color:var(--gold-l);margin:8px 0 12px}
+.s-hero p{margin:0 0 18px;color:#E8DCCB;font-size:16.5px;max-width:42ch}
+.s-hero .s-kicker{color:var(--gold-l)}
+.s-hero .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.s-hero img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:18px;display:block}
+.s-sec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:28px;align-items:center}
+.s-sec.rev img{order:2}
+.s-sec img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:18px;display:block;max-height:440px}
+.s-txt{display:flex;flex-direction:column;gap:10px}
+.s-txt h2{font-size:clamp(24px,3vw,32px);line-height:1.15;color:var(--ink)}
+.s-txt p{margin:0;font-size:16px;line-height:1.6;color:var(--text)}
+.s-link{color:var(--gold-d);font-weight:700;text-decoration:none;align-self:flex-start}
+.s-link:hover{text-decoration:underline}
+.s-foot{text-align:center;color:var(--muted);font-family:var(--f-title);letter-spacing:.04em;margin:8px 0 0}
+.s-article{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.s-article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.1}
+.s-article p{margin:0;font-size:16.5px;line-height:1.7;color:var(--text)}
+.s-quote{margin:8px 0;padding:18px 22px;border-left:4px solid var(--gold);background:var(--gold-bg);border-radius:0 14px 14px 0;font-family:var(--f-title);font-size:21px;line-height:1.35;color:var(--ink)}
+.s-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;line-height:1.5}
+.s-list a,.site .meta a{color:var(--gold-d)}
+@media (max-width:760px){.s-hero,.s-sec{grid-template-columns:minmax(0,1fr)}.s-hero{padding:20px}.s-sec.rev img{order:0}.s-sec img{max-height:300px}}
+.s-hero .btn:not(.ghost),.card.dark .btn:not(.ghost){background:var(--gold-l);color:var(--ink)}
+td input[type=number]{font:inherit;font-size:15px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;min-height:38px;background:#fff}
+.card.dark .copybox{color:var(--ink)}

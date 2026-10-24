@@ -1,6 +1,7 @@
 /* Comptoir du Flan — appli équipe
    Étape 1 : connexion, rôles, équipe, points de vente
-   Étape 2 : parfums, planning, envois & réassorts, production labo, journée vendeur, tournée livreur, ventes */
+   Étape 2 : parfums, planning, envois & réassorts, production labo, journée vendeur, tournée livreur, ventes
+   Étape 6 : pages du site pour les clients, clients inscrits, contacts, Travaillons ensemble, community manager */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -55,11 +56,15 @@ const CAN={
   journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur',
   labo:()=>isResp(me)||isLabo(me), marges:()=>isResp(me), compta:()=>me.role==='direction',
   pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne',
-  commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client'
+  commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client',
+  clients:()=>isResp(me), contacts:()=>isResp(me), demandes:()=>isResp(me), cm:()=>isResp(me)||me.role==='cm',
+  maison:()=>me.role==='client', nosparfums:()=>me.role==='client', histoire:()=>me.role==='client', infos:()=>me.role==='client', ensemble:()=>me.role==='client'
 };
+const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','ensemble','profil'];
 function navItems(){
-  if(me.role==='client')return [['commander','Commander'],['mescommandes','Mes commandes'],['profil','Mon profil']];
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['equipe','Équipe'],['boutiques','Points de vente']]);
+  if(me.role==='client')return [['maison','Accueil'],['nosparfums','Nos parfums'],['commander','Commander'],['mescommandes','Mes commandes'],['histoire','Notre histoire'],['infos','Infos pratiques'],['ensemble','Travaillons ensemble'],['profil','Mon profil']];
+  if(me.role==='cm')return [['accueil','Accueil'],['pointage','Mes heures'],['cm','Réseaux sociaux'],['planning','Mon planning'],['agenda','Agenda']];
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['demandes','Demandes'],['cm','Réseaux sociaux'],['clients','Clients'],['contacts','Contacts'],['equipe','Équipe'],['boutiques','Points de vente']]);
   if(me.role==='chef_patissier')return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning'],['agenda','Agenda']];
   if(isLabo(me))return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning'],['agenda','Agenda']];
   if(me.role==='vendeur')return [['accueil','Accueil'],['pointage','Mes heures'],['journee','Ma journée'],['commandes','Commandes'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
@@ -73,8 +78,8 @@ const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes clients','Flans entiers, retrait à Saint-Lazare','#commandes',null,'commandes')]},
   {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
   {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda')]},
-  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies')]},
-  {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros',null,6),T('Réseau de franchises','Chiffres consolidés',null,6),T('Réseaux sociaux','Suivi du community manager',null,6)]}
+  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies'),T('Contacts','Équipe, fournisseurs, clients pro','#contacts')]},
+  {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients'),T('Réseau de franchises','Chiffres consolidés',null,7)]}
 ];
 const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
 const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
@@ -82,7 +87,7 @@ const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
   vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits de flans entiers','#commandes')],
   livreur:[T('Ma tournée','Envois à livrer','#tournee',null,'tournee'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Points de vente','Adresses et horaires','#boutiques')],
-  cm:[T('Mon planning','Mes horaires de la semaine','#planning'),T('Réseaux sociaux','Statistiques et objectifs',null,6),T('Nouvelle publication','Préparer et programmer',null,6),T('Calendrier éditorial','Le mois en un coup d\'œil',null,6)]
+  cm:[T('Réseaux sociaux','Calendrier éditorial et résultats','#cm',null,'pubsCm'),T('Nouvelle publication','Préparer, envoyer en validation','#cm'),T('Mon planning','Mes horaires de la semaine','#planning')]
 };
 
 /* ---------- Envois : statuts ---------- */
@@ -95,6 +100,7 @@ let sb=null,user=null,me=null,loaded=false,channel=null;
 let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[],envoisAll=[],cloturesAll=[],calendrier=[];
 let rep={target:null,adj:{},adjTouched:{},qty:{},inc:{},liv:{}},meteo={};
 let mesPointages=[],monPlanning=[],commandesAll=[],parametres={};
+let contacts=[],demandes=[],publications=[],reseauxStats=[],clientsData=null,cmInfos=null;
 let lots=[],equipements=[],releves=[],receptions=[],ingredients=[],recettes=[],reglages={},compta=null;
 let route='accueil',day=todayISO(),authMode='login',justLoggedIn=false,recovering=false;
 let ui={editShop:null,addShop:false,lastInvite:null,newEnvoi:false,editParfum:null,addParfum:false};
@@ -141,7 +147,10 @@ const counts=()=>({
   tournee:envois.filter(e=>e.livreur_id===me.id&&e.statut==='pret').length,
   reception:envois.filter(e=>e.statut==='en_route').length,
   anomalies:0,
-  commandes:commandesAll.filter(c=>c.statut==='nouvelle').length
+  commandes:commandesAll.filter(c=>c.statut==='nouvelle').length,
+  demandes:demandes.filter(d=>d.statut==='nouvelle').length,
+  pubs:publications.filter(p=>p.statut==='a_valider').length,
+  pubsCm:publications.filter(p=>p.statut==='validee'||(p.statut==='idee'&&p.commentaire)).length
 });
 function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)}
 const pertesOf=l=>(l.quarts_jetes||0)+(l.quarts_casses||0)+(l.quarts_donnes||0);
@@ -221,6 +230,8 @@ function stockForecast(b,p,target){
 function show(which){$('#auth').hidden=which!=='auth';$('#app').hidden=which!=='app'}
 function setAuthMode(m,okMsg){
   authMode=m;
+  if(m==='ensemble'){authMode=m;$('#authForm').hidden=true;const bx=$('#ensembleBox');bx.hidden=false;bx.innerHTML=demandeFormHTML()+'<button class="link" type="button" id="toLogin">Retour à la connexion</button>';demTypeUpdate(bx.querySelector('form'));$('#authTag').innerHTML='Travaillons<br>ensemble.';$('#authSub').textContent='Franchise, partenariat, commande pro, candidature : écrivez-nous.';return}
+  $('#authForm').hidden=false;$('#ensembleBox').hidden=true;
   const C={login:['Connexion','Équipe ou client : connecte-toi avec ton adresse e-mail.','Se connecter'],activate:['Activer mon compte','Utilise l’adresse à laquelle ton responsable t’a invité·e.','Créer mon compte'],reset:['Mot de passe oublié','Tu vas recevoir un lien pour en choisir un nouveau.','Recevoir le lien'],client:['Créer mon compte client','Commande tes flans entiers en ligne, retrait en boutique, paiement sur place.','Créer mon compte']}[m];
   const signup=m==='activate'||m==='client';
   $('#authTitle').textContent=C[0];$('#authLead').textContent=C[1];$('#authBtn').textContent=C[2];
@@ -229,12 +240,12 @@ function setAuthMode(m,okMsg){
   $('#charteTxt').textContent=m==='client'?'J’accepte que mes nom, prénom, e-mail et téléphone soient utilisés par le Comptoir du Flan pour gérer mes commandes. Je peux supprimer mon compte à tout moment.':'J’accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l’organisation du travail.';
   $('#aPw').autocomplete=signup?'new-password':'current-password';
   $('#toActivate').textContent=m==='login'?'Équipe : première connexion ? Activer mon compte':'J’ai déjà un compte';
-  $('#toReset').hidden=m!=='login';$('#clientCta').hidden=m==='client';
-  $('#authTag').innerHTML=m==='client'?'Le flan,<br>en entier.':'Produire juste.<br>Vendre mieux.';
-  $('#authSub').textContent=m==='client'?'Commande en ligne, retrait en boutique.':'L’outil interne de l’équipe : production, ventes, stocks et prévisions.';
+  $('#toReset').hidden=m!=='login';$('#clientCta').hidden=m==='client';$('#toEnsemble').hidden=m!=='login';
+  $('#authTag').innerHTML=m==='client'?'L’art du flan,<br>tout simplement.':'Produire juste.<br>Vendre mieux.';
+  $('#authSub').textContent=m==='client'?'Commandez vos flans entiers en ligne, retrait en boutique, paiement sur place.':'L’outil interne de l’équipe : production, ventes, stocks et prévisions.';
   $('#authErr').hidden=true;const ok=$('#authOk');ok.textContent=okMsg||'';ok.hidden=!okMsg;
 }
-function showAuth(okMsg){show('auth');$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode(!okMsg&&location.hash==='#client'?'client':'login',okMsg)}
+function showAuth(okMsg){show('auth');$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode(!okMsg&&location.hash==='#client'?'client':!okMsg&&location.hash==='#ensemble'?'ensemble':'login',okMsg)}
 
 /* ---------- Données ---------- */
 async function loadAll(){
@@ -276,6 +287,8 @@ async function loadAll(){
     const [ig,rc,rg]=await Promise.all([sb.from('ingredients').select('*').order('nom'),sb.from('recettes').select('*'),sb.from('reglages').select('*')]);
     ingredients=ig.data||[];recettes=rc.data||[];reglages={};(rg.data||[]).forEach(r=>reglages[r.cle]=r.valeur);
   }
+  if(isResp(me)){const [ct,dm]=await Promise.all([sb.from('contacts').select('*').order('nom'),sb.from('demandes').select('*').order('created_at',{ascending:false}).limit(500)]);contacts=ct.data||[];demandes=dm.data||[];if(ct.error&&['contacts','demandes'].includes(route))toast('Base pas à jour : lance etape6.sql dans Supabase.');if(route==='clients'&&clientsData&&!clientsData.loading)loadClients()}else{contacts=[];demandes=[]}
+  if(me&&(isResp(me)||me.role==='cm')){const [pb,rs]=await Promise.all([sb.from('publications').select('*').gte('jour',addDays(todayISO(),-120)).lte('jour',addDays(todayISO(),240)).order('jour'),sb.from('reseaux_stats').select('*').gte('mois',addDays(todayISO(),-400))]);publications=pb.data||[];reseauxStats=rs.data||[];if(pb.error&&route==='cm')toast('Base pas à jour : lance etape6.sql dans Supabase.')}else{publications=[];reseauxStats=[]}
   if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
   loaded=true;render();refreshLastMod();if(route==='tableau'&&isResp(me))loadJournal();
 }
@@ -283,7 +296,7 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres','contacts','demandes','publications','reseaux_stats'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -297,16 +310,16 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
-function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
+const ROUTES=['clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
-const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles']};
-const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda'};
+const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats']};
+const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés'};
 const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
 let lastMod={},lastModT=null;
 function whenTxt(ts){const d=new Date(ts),t=todayISO(),k=isoOf(d);return (k===t?'aujourd’hui':k===addDays(t,-1)?'hier':'le '+d.getDate()+' '+MOIS[d.getMonth()])+' à '+timeOf(ts)}
@@ -319,12 +332,12 @@ function render(){
   document.body.classList.toggle('borne-mode',me.role==='borne'&&route!=='profil');
   if(me.role==='borne'&&route!=='profil'&&borne.step==='sign'&&document.getElementById('bSig'))return;
   if(me.role==='borne'){nav.innerHTML='';$('#me').innerHTML=`<span class="avatar">B</span><span>Borne</span>`;main.innerHTML=route==='profil'?profileView():borneView();if(borne.step==='sign')setTimeout(sigInit,0);return}
-  if(me.role==='client'&&!['commander','mescommandes','profil'].includes(route))route='commander';
-  if(!CAN[route]())route='accueil';
+  if(me.role==='client'&&!CLIENT_ROUTES.includes(route))route='maison';
+  if(!CAN[route]())route=me.role==='client'?'maison':'accueil';
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
+  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView};
   main.innerHTML=V[route]();
   const hd=main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
 }
@@ -1393,7 +1406,7 @@ function profileView(){
     <section class="card"><h2>Mes informations</h2>
       <form id="profileForm" class="grid" style="gap:12px" novalidate>
         <div class="row2"><label class="field">Prénom<input id="pPrenom" value="${esc(me.prenom||'')}" autocomplete="given-name"></label><label class="field">Nom<input id="pNom" value="${esc(me.nom||'')}" autocomplete="family-name"></label></div>
-        <label class="field">Téléphone<input id="pTel" type="tel" value="${esc(me.telephone||'')}" autocomplete="tel"></label>
+        <label class="field">Téléphone<input id="pTel" type="tel" value="${esc(me.telephone||'')}" autocomplete="tel">${me.role==='client'?'':'<small>Visible par les responsables dans Contacts.</small>'}</label>
         <label class="field">Adresse e-mail<input value="${esc(me.email)}" disabled></label>
         <button class="btn" type="submit">Enregistrer</button></form>
       ${me.role==='client'?'':'<p class="note">Ton rôle est géré par les responsables.</p>'}</section>
@@ -1407,6 +1420,303 @@ function profileView(){
     </div></div></div>`;
 }
 
+/* ================= Étape 6 : site client, clients, contacts, demandes, community manager ================= */
+const SLOGAN='L’art du flan, tout simplement.';
+const SITE='photos/site/';
+
+/* --- Pages du site pour les clients --- */
+function siteSec(img,alt,kicker,title,text,href,link,rev){
+  return `<section class="s-sec${rev?' rev':''}"><img src="${SITE+img}" alt="${esc(alt)}" loading="lazy"><div class="s-txt">${kicker?`<span class="s-kicker">${esc(kicker)}</span>`:''}<h2>${esc(title)}</h2><p>${esc(text)}</p>${href?`<a class="s-link" href="${href}">${esc(link)}</a>`:''}</div></section>`;
+}
+function maisonView(){
+  const n=parfums.filter(p=>p.disponible).length;
+  const next=commandesAll.filter(c=>c.retrait_jour>=todayISO()&&!['annulee','retiree'].includes(c.statut)).sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure))[0];
+  return `<div class="page site">
+  <section class="s-hero"><div class="s-hero-txt"><span class="s-kicker">Notre passion, le flan</span><h1>L’art du flan,<br>tout simplement.</h1>
+    <p>Commandez en ligne vos flans entiers, à retirer en boutique. Paiement sur place.</p>
+    <div class="btnrow"><a class="btn" href="#commander">Commander un flan entier</a><a class="btn ghost" href="#nosparfums">Découvrir nos parfums</a></div></div>
+    <img src="${SITE}hero.jpg" alt="Flans entiers et parts sur un plateau en bois"></section>
+  ${next?`<a class="banner" href="#mescommandes" style="text-decoration:none"><span class="k">Ma prochaine commande</span><span class="v">${esc(fmtDay(next.retrait_jour))} à ${esc(hhmm(next.retrait_heure))}</span><span class="s">${esc((CMD_ST[next.statut]||['',''])[0])} · n° ${esc(next.numero||'')}</span></a>`:''}
+  ${siteSec('univers.jpg','Parts de flans aux pralinés','Un univers dédié au flan','Un univers dédié au flan','Un assortiment exclusif de flans préparés sur une base de crème onctueuse parfumée à la véritable vanille de Madagascar, sublimés par des pralinés nobles, des fruits raffinés et des saveurs inédites.','#nosparfums','Voir tous les parfums →')}
+  ${siteSec('maison.jpg','Flans aux fruits','Premier Comptoir en France','Quand l’élégance rencontre la gourmandise','Au Comptoir du Flan, nous avons choisi de réinventer un grand classique français. Chaque recette allie savoir-faire artisanal, ingrédients sélectionnés avec exigence et créativité, pour transformer un dessert intemporel en expérience haut de gamme.','#commander','Commander →',true)}
+  ${siteSec('tradition.jpg','Flan entier et part au praliné','Entre tradition et innovation','Tradition française, créativité gourmande, le flan comme jamais','Des bases authentiques, une pâte sucrée parfumée à l’amande et à la fleur de sel, des pralinés 100 % fruits secs, des coulis de fruits naturels… Chaque détail compte pour offrir un dessert qui séduit les yeux autant que les papilles.','#histoire','L’histoire du Comptoir →')}
+  ${siteSec('experience.jpg','Petits flans aux fruits rouges','','Offrez-vous l’expérience',(n?n+' parfums uniques':'Des parfums uniques')+' pour réinventer le flan à la française. Chaque matin, nos flans sont préparés du jour.','#infos','Horaires de nos boutiques →',true)}
+  <p class="s-foot">Le Comptoir du Flan — ${SLOGAN}</p></div>`;
+}
+function nosParfumsView(){
+  const list=parfums.slice().sort((a,b)=>(b.disponible-a.disponible)||((a.ordre||0)-(b.ordre||0)));
+  const B=boutiqueRetrait();
+  return `<div class="page site">
+  <div class="head"><div><h1>Nos parfums</h1><p>Les parts se vendent dans toutes nos boutiques. Les flans entiers se commandent en ligne, retrait à ${esc(B?B.nom:'Saint-Lazare')}.</p></div><a class="btn sm" href="#commander">Commander un flan entier</a></div>
+  <div class="parfums">${list.map(p=>`<div class="parfum${p.disponible?'':' off'}">${p.photo?`<img class="pphoto" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`:`<div class="bandeau" style="background:${esc(p.couleur||'#E6C15C')}"></div>`}<div class="in">
+    <div class="envoi-h"><b>${esc(p.nom)}</b>${p.disponible?'':'<span class="badge b-mute">Pas en ce moment</span>'}</div>
+    <span class="meta">Le quart · <b class="num">${eur(p.prix_quart)}</b></span>${p.prix_entier!=null?`<span class="meta">Flan entier · <b class="num">${eur(p.prix_entier)}</b></span>`:''}</div></div>`).join('')}</div>
+  <p class="s-foot">Fabriqués le matin même · ${SLOGAN}</p></div>`;
+}
+function histoireView(){
+  const P=['Le Comptoir du Flan, c’est avant tout l’histoire d’un homme, Jean Gautier. Né au Venezuela d’une mère vénézuélienne et d’un père français, Jean a grandi entre deux cultures, entre soleil et terroir. À six ans, il rejoint la France et s’installe à La Salvetat-sur-Agout, un village où les traditions et le goût du vrai occupent une place essentielle.',
+    'Il découvre très tôt la magie de la cuisine. Enfant curieux et gourmand, il s’amuse à préparer des plats pour sa famille, trouvant déjà dans ces moments de partage une évidence : celle de nourrir les autres avec amour.',
+    'À 17 ans, il franchit une nouvelle étape en réalisant son premier stage chez le pâtissier reconnu Xavier Flipo. Ce sera le début d’un parcours jalonné de rencontres prestigieuses et d’expériences dans des maisons d’exception : auprès de grands noms de la pâtisserie comme Cédric Grolet ou Clara Jung, et dans l’univers raffiné de l’hôtellerie de luxe au sein du Four Seasons en région PACA.',
+    'Mais derrière toutes ces expériences, une passion ne l’a jamais quitté : le flan. Ce dessert populaire et intemporel, qu’il a toujours réalisé en famille, est pour lui bien plus qu’une gourmandise : c’est un souvenir d’enfance, un lien entre les générations, un symbole de simplicité et de bonheur.',
+    'Petit à petit, Jean s’amuse à revisiter le flan pour ses proches et amis. Son ingéniosité, son savoir-faire et son exigence transforment ce dessert du quotidien en une véritable œuvre de pâtisserie. Très vite, l’engouement est au rendez-vous : ses flans ne laissent personne indifférent.'];
+  const P2=['Sur sa route, il croise Philippe et Sébastien. Animés par les mêmes valeurs (l’amour du travail bien fait, le respect des produits, l’esprit d’entreprendre), ils partagent avec Jean une vision commune : donner au flan la place qu’il mérite, en faire un dessert d’exception.',
+    'C’est ainsi qu’est né Le Comptoir du Flan : la première enseigne nationale dédiée uniquement au flan, déclinée en une multitude de saveurs, toutes pensées avec exigence et passion.',
+    'Un hommage à la tradition, sublimé par la créativité d’un jeune chef, et porté par une ambition : transformer un dessert populaire en une expérience haut de gamme, accessible à tous les gourmands.',
+    'Le Comptoir du Flan, c’est plus qu’une boutique : c’est une aventure humaine, un rêve devenu réalité, et une invitation à redécouvrir l’intemporel… autrement.'];
+  const M=['Chez Le Comptoir du Flan, nous avons choisi de consacrer tout notre savoir-faire à un grand classique de la pâtisserie française : le flan. Premier concept en France exclusivement dédié à cette spécialité, nous réinventons le flan en le sublimant à travers plus de 23 parfums haut de gamme.',
+    'Notre ambition est simple : offrir une expérience unique, où tradition et innovation se rencontrent. Chaque flan est élaboré avec des ingrédients rigoureusement sélectionnés, un respect des recettes artisanales et une créativité qui surprend les palais les plus exigeants.',
+    'Au-delà d’un dessert, nous faisons du flan une véritable signature gourmande : raffinée, élégante et inoubliable.',
+    'Le Comptoir du Flan, c’est l’adresse incontournable des amateurs de douceur qui recherchent l’excellence, la variété et le plaisir de découvrir de nouvelles saveurs.'];
+  const ps=a=>a.map(t=>`<p>${esc(t)}</p>`).join('');
+  return `<div class="page site">
+  <article class="s-article"><span class="s-kicker">Notre histoire</span><h1>L’histoire du Comptoir du Flan</h1>${ps(P)}
+    <blockquote class="s-quote">« Donner au flan la place qu’il mérite, en faire un dessert d’exception. »</blockquote>${ps(P2)}</article>
+  <section class="s-sec"><img src="${SITE}univers.jpg" alt="Parts de flans aux pralinés" loading="lazy"><div class="s-txt"><span class="s-kicker">Notre Maison</span><h2>Le premier Comptoir dédié au flan</h2>${ps(M)}</div></section>
+  <section class="card dark" style="gap:6px"><h2 style="color:var(--gold-l)">Fabriqués le matin même</h2><span class="sub">Tous nos flans sont préparés chaque matin : les retraits se font sur les créneaux indiqués pour garantir fraîcheur et qualité.</span>
+    <div class="btnrow" style="margin-top:6px"><a class="btn" href="#nosparfums">Découvrir nos parfums</a><a class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" href="#infos">Horaires et commande</a></div></section>
+  <p class="s-foot">Le Comptoir du Flan — ${SLOGAN}</p></div>`;
+}
+function infosView(){
+  const p=PC(),B=boutiqueRetrait();
+  const shops=boutiques.filter(b=>b.actif);
+  return `<div class="page site">
+  <div class="head"><div><h1>Infos pratiques</h1><p>Commande, retrait et horaires de nos boutiques</p></div></div>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><h2>Flan entier sur commande</h2>
+      <ul class="s-list"><li>Commande en ligne depuis l’onglet <a href="#commander">Commander</a>.</li>
+      <li>Jusqu’à ${p.seuil_flans} flan${p.seuil_flans>1?'s':''} : au moins ${p.delai_petit_h} h à l’avance. Au-delà : ${p.delai_grand_h} h à l’avance.</li>
+      <li>Retrait à <b>${esc(B?B.nom:'Saint-Lazare')}</b>${B&&B.adresse?' ('+esc(B.adresse)+')':''}, le ${(p.jours||[]).map(j=>ISO_JOURS[j]).join(', ')}, de ${hhmm(p.heure_debut)} à ${hhmm(p.heure_fin)}.</li>
+      <li>Paiement au retrait. Un acompte peut être demandé pour les grosses commandes.</li>
+      <li>Au-delà de ${p.max_flans} flans, contactez directement la boutique.</li></ul></section>
+    <section class="card"><h2>Les parts</h2>
+      <ul class="s-list"><li>En vente au quart dans toutes nos boutiques, sans réservation.</li><li>Tous nos flans sont fabriqués le matin même.</li><li>Pour un événement ou une commande professionnelle : <a href="#ensemble">Travaillons ensemble</a>.</li></ul></section>
+  </div>
+  <section class="card"><h2>Nos boutiques vous accueillent</h2>
+    <div class="shops">${shops.map(b=>`<div class="shop"><div class="shop-h"><b>${esc(b.nom)}</b>${B&&B.id===b.id?'<span class="badge b-gold">Retrait des commandes</span>':''}</div><span class="meta">${esc([b.adresse,b.ville].filter(Boolean).join(' · '))}</span><span style="font-size:14px">${b.horaires?esc(b.horaires):'<span class="meta">Horaires bientôt en ligne</span>'}</span></div>`).join('')||'<p class="empty">Les boutiques arrivent bientôt.</p>'}</div></section>
+  <p class="s-foot">Le Comptoir du Flan — ${SLOGAN}</p></div>`;
+}
+
+/* --- Travaillons ensemble (public, avec ou sans compte) --- */
+const DEM_TYPES={franchise:['Devenir franchisé','Ouvrir un Comptoir du Flan dans votre ville'],partenariat:['Partenariat','Restaurant, hôtel, épicerie fine, marque…'],pro:['Commande pro ou événement','Mariage, séminaire, cocktail, entreprise'],candidature:['Rejoindre l’équipe','Pâtisserie, vente, livraison, communication'],autre:['Autre demande','Presse, question, suggestion']};
+const DEM_ST={nouvelle:['Nouvelle','b-gold'],en_cours:['En cours','b-info'],acceptee:['Acceptée','b-good'],refusee:['Refusée','b-bad'],archivee:['Archivée','b-mute']};
+const APPORTS=['Moins de 50 000 €','De 50 000 à 100 000 €','Plus de 100 000 €','Je préfère en parler de vive voix'];
+const DEM_MSG={franchise:'Votre projet en quelques lignes',partenariat:'Votre établissement et votre idée de partenariat',pro:'Date, nombre de personnes, parfums souhaités',candidature:'Le poste qui vous intéresse et votre parcours',autre:'Votre message'};
+function demandeFormHTML(pre){
+  pre=pre||{};const t='franchise';
+  return `<form id="demandeForm" class="grid" style="gap:12px" novalidate>
+    <div><h1 style="margin:0 0 6px">Travaillons ensemble</h1><p class="lead" style="margin:0">Ouvrir un Comptoir du Flan dans votre ville, proposer un partenariat, commander pour un événement ou rejoindre l’équipe : dites-nous tout, on vous répond sous 5 jours ouvrés.</p></div>
+    <fieldset class="dtypes"><legend class="sr">Type de demande</legend>${Object.entries(DEM_TYPES).map(([k,v])=>`<label class="dtype"><input type="radio" name="dType" value="${k}"${k===t?' checked':''}><span><b>${esc(v[0])}</b><small>${esc(v[1])}</small></span></label>`).join('')}</fieldset>
+    <label class="field">Prénom et nom<input id="dNom" autocomplete="name" value="${esc(pre.nom||'')}"></label>
+    <div class="row2"><label class="field">E-mail<input id="dEmail" type="email" autocomplete="email" value="${esc(pre.email||'')}"></label><label class="field">Téléphone<input id="dTel" type="tel" autocomplete="tel" value="${esc(pre.tel||'')}"></label></div>
+    <div class="row2"><label class="field" id="dSocRow">Société ou établissement<input id="dSoc" autocomplete="organization"></label><label class="field"><span id="dVilleLbl">Ville visée</span><input id="dVille" autocomplete="address-level2"></label></div>
+    <label class="field" id="dApportRow">Apport personnel envisagé<select id="dApport"><option value="">Choisir…</option>${APPORTS.map(a=>`<option>${esc(a)}</option>`).join('')}</select></label>
+    <label class="field"><span id="dMsgLbl">${esc(DEM_MSG[t])}</span><textarea id="dMsg" rows="5" maxlength="4000"></textarea></label>
+    <label class="check"><input type="checkbox" id="dOk"><span>J’accepte que mes informations soient utilisées par le Comptoir du Flan pour traiter ma demande. Elles sont supprimées au plus tard 2 ans après notre dernier échange.</span></label>
+    <p class="msg err" id="dErr" hidden></p>
+    <button class="btn" type="submit">Envoyer ma demande</button></form>`;
+}
+function demTypeUpdate(f){
+  const t=(f.querySelector('input[name="dType"]:checked')||{}).value||'autre';
+  const a=f.querySelector('#dApportRow');if(a)a.hidden=t!=='franchise';
+  const s=f.querySelector('#dSocRow');if(s)s.hidden=t==='candidature';
+  const v=f.querySelector('#dVilleLbl');if(v)v.textContent=t==='franchise'?'Ville visée':'Ville';
+  const m=f.querySelector('#dMsgLbl');if(m)m.textContent=DEM_MSG[t];
+}
+const DEM_MERCI=`<div class="grid" style="gap:12px"><h1 style="margin:0">Merci !</h1><p class="lead" style="margin:0">Votre demande est bien envoyée. Nous vous répondons sous 5 jours ouvrés, par e-mail ou par téléphone.</p></div>`;
+function ensembleView(){
+  return `<div class="page site"><section class="card" style="max-width:720px;margin:0 auto;width:100%" id="ensembleCard">${ui.demOk?DEM_MERCI+'<button class="btn ghost sm" type="button" data-act="demAutre" style="align-self:flex-start">Envoyer une autre demande</button>':demandeFormHTML({nom:[me.prenom,me.nom].filter(Boolean).join(' '),email:me.email,tel:me.telephone})}</section></div>`;
+}
+async function envoyerDemande(f,btn){
+  const err=f.querySelector('#dErr');const fail=m=>{err.textContent=m;err.hidden=false;if(btn)btn.disabled=false};err.hidden=true;
+  const v=id=>(f.querySelector('#'+id)||{}).value||'';
+  const t=(f.querySelector('input[name="dType"]:checked')||{}).value;
+  if(!t)return fail('Choisissez le type de demande.');
+  if(v('dNom').trim().length<2)return fail('Indiquez votre prénom et votre nom.');
+  if(!/^\S+@\S+\.\S+$/.test(v('dEmail').trim()))return fail('Indiquez une adresse e-mail valide.');
+  if(v('dMsg').trim().length<10)return fail('Écrivez quelques mots sur votre demande.');
+  if(!f.querySelector('#dOk').checked)return fail('Cochez la case pour envoyer votre demande.');
+  if(btn)btn.disabled=true;
+  try{const {error}=await sb.rpc('envoyer_demande',{p_type:t,p_nom:v('dNom'),p_email:v('dEmail'),p_message:v('dMsg'),p_societe:t==='candidature'?null:v('dSoc'),p_ville:v('dVille'),p_tel:v('dTel'),p_apport:t==='franchise'?v('dApport'):null});
+    if(error)throw error;
+    if(f.closest('#ensembleBox')){f.outerHTML=DEM_MERCI+'<button class="link" type="button" id="toLogin2">Retour à la connexion</button>'}else{ui.demOk=true;render()}
+  }catch(e){fail(/envoyer_demande/.test(e.message||'')?'Ce formulaire n’est pas encore ouvert. Réessayez plus tard.':frErr(e))}
+}
+
+/* --- Clients inscrits (responsables) --- */
+async function loadClients(){clientsData={loading:true,list:[]};try{const {data,error}=await sb.rpc('liste_clients');if(error)throw error;clientsData={list:data||[]}}catch(e){clientsData={list:[],err:/liste_clients/.test(e.message||'')?'Base pas à jour : lance etape6.sql dans Supabase.':frErr(e)}}if(route==='clients')render()}
+function clientsView(){
+  if(!clientsData){loadClients();return `<div class="page"><p class="empty">Chargement des clients…</p></div>`}
+  const L=clientsData.list,actifs=L.filter(c=>+c.nb>0),tot=L.reduce((a,c)=>a+(+c.total||0),0);
+  const mois=L.filter(c=>c.created_at&&String(c.created_at).slice(0,7)===todayISO().slice(0,7)).length;
+  const nm=c=>[c.prenom,c.nom].filter(Boolean).join(' ')||'Sans nom';
+  return `<div class="page">
+  <div class="head"><div><h1>Clients inscrits</h1><p>Comptes créés depuis l’espace client · visibles uniquement par les responsables</p></div>${L.length?'<button class="btn ghost sm" type="button" data-act="cliCsv">Exporter (CSV)</button>':''}</div>
+  ${clientsData.err?`<p class="msg err">${esc(clientsData.err)}</p>`:''}
+  <div class="grid g4">
+    <div class="card kpi"><span class="lbl">Clients inscrits</span><span class="val num">${L.length}</span><span class="hint">${mois} ce mois-ci</span></div>
+    <div class="card kpi"><span class="lbl">Ont déjà commandé</span><span class="val num">${actifs.length}</span><span class="hint">${L.length?Math.round(actifs.length*100/L.length):0} % des inscrits</span></div>
+    <div class="card kpi"><span class="lbl">Total des commandes</span><span class="val num">${eur(tot)}</span><span class="hint">hors commandes annulées</span></div>
+    <div class="card kpi"><span class="lbl">Panier moyen</span><span class="val num">${eur(actifs.length?tot/actifs.reduce((a,c)=>a+(+c.nb),0):0)}</span><span class="hint">par commande</span></div>
+  </div>
+  <section class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2 style="margin:0">Liste <span class="badge b-mute">${L.length}</span></h2><input class="search" id="cliQ" type="search" placeholder="Rechercher un nom, un e-mail, un téléphone" aria-label="Rechercher un client"></div>
+    ${L.length?`<div class="tbl-wrap"><table style="min-width:640px"><thead><tr><th>Client</th><th>Téléphone</th><th>Inscrit le</th><th class="num">Commandes</th><th class="num">Total</th><th>Dernier retrait</th><th></th></tr></thead><tbody>
+    ${L.map(c=>`<tr data-q="${esc((nm(c)+' '+(c.email||'')+' '+(c.telephone||'')).toLowerCase())}"><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c))}</span><span>${esc(nm(c))}<small>${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:''}</small></span></div></td>
+      <td>${c.telephone?`<a href="tel:${esc(String(c.telephone).replace(/[^+0-9]/g,''))}">${esc(c.telephone)}</a>`:'<span class="meta">—</span>'}</td>
+      <td>${c.created_at?esc(new Date(c.created_at).toLocaleDateString('fr-FR')):''}</td><td class="num">${+c.nb||0}</td><td class="num">${eur(c.total)}</td><td>${c.derniere?esc(fmtDay(c.derniere)):'<span class="meta">—</span>'}</td>
+      <td><button class="btn sm danger" type="button" data-act="cliDel" data-id="${c.id}" data-nom="${esc(nm(c))}">Supprimer</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Aucun client inscrit pour l’instant. Le lien à partager : '+esc(APP_URL)+'#client</p>'}
+    <p class="note">Supprimer un compte client efface ses informations de connexion. Ses commandes passées restent avec le nom indiqué à la commande, pour la comptabilité. Lien d’inscription à partager : <b>${esc(APP_URL)}#client</b></p></section></div>`;
+}
+
+/* --- Contacts (responsables) --- */
+const CT_CAT={fournisseur:'Fournisseurs',client_pro:'Clients pro',partenaire:'Partenaires',prestataire:'Prestataires',autre:'Autres'};
+const telLink=t=>t?`<a href="tel:${esc(String(t).replace(/[^+0-9]/g,''))}">${esc(t)}</a>`:'';
+const mailLink=m=>m?`<a href="mailto:${esc(m)}">${esc(m)}</a>`:'';
+function contactForm(c){
+  c=c||{categorie:ui.ctTab&&ui.ctTab!=='equipe'?ui.ctTab:'fournisseur'};
+  const f=(k,l,ph,type)=>`<label class="field">${l}<input name="${k}" ${type?`type="${type}"`:''} value="${esc(c[k]||'')}" placeholder="${esc(ph||'')}"></label>`;
+  return `<form class="grid" style="gap:10px" data-contactform="${c.id||'new'}" novalidate>
+    <div class="row2"><label class="field">Catégorie<select name="categorie">${Object.entries(CT_CAT).map(([k,v])=>`<option value="${k}"${k===c.categorie?' selected':''}>${v.replace(/s$/,'')}</option>`).join('')}</select></label>${f('nom','Nom','Nom du contact')}</div>
+    <div class="row2">${f('societe','Société','')}${f('fonction','Fonction ou produits','Farine, emballages, commercial…')}</div>
+    <div class="row2">${f('telephone','Téléphone','','tel')}${f('email','E-mail','','email')}</div>
+    ${f('adresse','Adresse','')}${f('note','Note','Jours de livraison, n° client, conditions…')}
+    <p class="msg err" hidden></p><div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="ctCancel">Annuler</button></div></form>`;
+}
+function contactsView(){
+  const tab=ui.ctTab||'fournisseur';
+  const team=profiles.filter(p=>p.actif&&!['client','aucun','borne'].includes(p.role)).sort((a,b)=>ROLE_KEYS.indexOf(a.role)-ROLE_KEYS.indexOf(b.role));
+  const n=k=>k==='equipe'?team.length:contacts.filter(c=>c.categorie===k).length;
+  const tabs=Object.entries(CT_CAT).concat([['equipe','Équipe']]);
+  let body;
+  if(tab==='equipe')body=team.length?`<div class="tbl-wrap"><table style="min-width:560px"><thead><tr><th>Membre</th><th>Rôle</th><th>Téléphone</th><th>E-mail</th></tr></thead><tbody>${team.map(p=>`<tr data-q="${esc(((p.prenom||'')+' '+(p.nom||'')+' '+roleLabel(p.role)+' '+(p.email||'')+' '+(p.telephone||'')).toLowerCase())}"><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(p))}</span><span>${esc(p.prenom?p.prenom+' '+(p.nom||''):roleShort(p.role))}</span></div></td><td>${esc(roleLabel(p.role))}</td><td>${telLink(p.telephone)||'<span class="meta">Non renseigné</span>'}</td><td>${mailLink(p.email)}</td></tr>`).join('')}</tbody></table></div><p class="note">Chaque membre renseigne son téléphone dans <b>Mon profil</b>.</p>`:'<p class="empty">Personne dans l’équipe pour l’instant.</p>';
+  else{const list=contacts.filter(c=>c.categorie===tab).sort((a,b)=>(a.societe||a.nom).localeCompare(b.societe||b.nom,'fr'));
+    body=(ui.ctAdd?`<div class="shop">${contactForm(null)}</div>`:'')+(list.length?`<div class="shops">${list.map(c=>ui.ctEdit===c.id?`<div class="shop">${contactForm(c)}</div>`:`<div class="shop" data-q="${esc([c.nom,c.societe,c.fonction,c.telephone,c.email,c.adresse,c.note].filter(Boolean).join(' ').toLowerCase())}">
+      <div class="shop-h"><b>${esc(c.societe||c.nom)}</b></div>${c.societe?`<span>${esc(c.nom)}${c.fonction?' · '+esc(c.fonction):''}</span>`:c.fonction?`<span>${esc(c.fonction)}</span>`:''}
+      ${c.telephone?`<span>${telLink(c.telephone)}</span>`:''}${c.email?`<span style="overflow-wrap:anywhere">${mailLink(c.email)}</span>`:''}${c.adresse?`<span class="meta">${esc(c.adresse)}</span>`:''}${c.note?`<span class="meta">${esc(c.note)}</span>`:''}
+      <div class="actions"><button class="btn ghost sm" type="button" data-act="ctEdit" data-id="${c.id}">Modifier</button><button class="btn ghost sm" type="button" data-act="ctDel" data-id="${c.id}">Supprimer</button></div></div>`).join('')}</div>`:ui.ctAdd?'':`<p class="empty">Aucun contact dans « ${esc(CT_CAT[tab])} ».</p>`);}
+  return `<div class="page">
+  <div class="head"><div><h1>Contacts</h1><p>Équipe, fournisseurs, clients pro et autres · accès réservé aux responsables</p></div>${tab!=='equipe'&&!ui.ctAdd?'<button class="btn sm" type="button" data-act="ctAdd">+ Ajouter un contact</button>':''}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between"><div class="chips" role="tablist">${tabs.map(([k,l])=>`<button type="button" class="chip" role="tab" data-act="ctTab" data-t="${k}" aria-selected="${k===tab}" style="cursor:pointer;${k===tab?'background:var(--ink);color:#fff;border-color:var(--ink)':''}">${esc(l)} <b>${n(k)}</b></button>`).join('')}</div>
+    <input class="search" id="ctQ" type="search" placeholder="Rechercher un contact" aria-label="Rechercher un contact"></div>
+  <section class="card">${body}</section>
+  <p class="note">Données personnelles : accès réservé aux responsables. Pense à supprimer les contacts qui ne servent plus (RGPD).</p></div>`;
+}
+
+/* --- Demandes reçues (responsables) --- */
+function demandesView(){
+  const tab=ui.demTab||'nouvelle',ty=ui.demType||'';
+  const grp={nouvelle:['nouvelle'],en_cours:['en_cours'],traitees:['acceptee','refusee'],archivee:['archivee']};
+  const lbl={nouvelle:'Nouvelles',en_cours:'En cours',traitees:'Traitées',archivee:'Archivées'};
+  const list=demandes.filter(d=>grp[tab].includes(d.statut)&&(!ty||d.type===ty));
+  const resps=profiles.filter(p=>isResp(p));
+  const link=APP_URL+'#ensemble';
+  return `<div class="page">
+  <div class="head"><div><h1>Demandes reçues</h1><p>Franchises, partenariats, commandes pro et candidatures envoyées depuis « Travaillons ensemble »</p></div></div>
+  <section class="card dark" style="gap:8px"><span class="sub">Formulaire à partager (site, Instagram, e-mail) : ouvert à tous, même sans compte.</span><div class="btnrow"><span class="copybox" id="demLink" style="flex:1;min-width:0">${esc(link)}</span><button class="btn sm" type="button" data-act="demCopy">Copier le lien</button></div></section>
+  <div class="chips" role="tablist">${Object.keys(grp).map(k=>{const c=demandes.filter(d=>grp[k].includes(d.statut)).length;return `<button type="button" class="chip" data-act="demTab" data-t="${k}" aria-selected="${k===tab}" style="cursor:pointer;${k===tab?'background:var(--ink);color:#fff;border-color:var(--ink)':''}">${lbl[k]} <b>${c}</b></button>`}).join('')}</div>
+  <div class="chips">${[['','Tous les types']].concat(Object.entries(DEM_TYPES).map(([k,v])=>[k,v[0]])).map(([k,l])=>`<button type="button" class="chip" data-act="demType" data-t="${k}" aria-pressed="${k===ty}" style="cursor:pointer;${k===ty?'border-color:var(--gold);background:var(--gold-bg)':''}">${esc(l)} <b>${demandes.filter(d=>grp[tab].includes(d.statut)&&(!k||d.type===k)).length}</b></button>`).join('')}</div>
+  ${list.length?list.map(d=>`<section class="card" style="gap:8px">
+    <div class="envoi-h"><span class="badge b-info">${esc(DEM_TYPES[d.type][0])}</span><span class="meta">${esc(whenTxt(d.created_at))}</span></div>
+    <h2 style="margin:0">${esc(d.nom)}${d.societe?' · '+esc(d.societe):''}</h2>
+    <span class="meta">${[d.ville?(d.type==='franchise'?'Ville visée : ':'')+d.ville:'',d.apport?'Apport : '+d.apport:''].filter(Boolean).map(esc).join(' · ')}</span>
+    <div class="btnrow">${mailLink(d.email)}${d.telephone?' · '+telLink(d.telephone):''}</div>
+    <p style="margin:0;white-space:pre-wrap;background:var(--cream);padding:10px 12px;border-radius:10px">${esc(d.message)}</p>
+    <div class="row2"><label class="field">Statut<select data-act="demStatut" data-id="${d.id}">${Object.entries(DEM_ST).map(([k,v])=>`<option value="${k}"${k===d.statut?' selected':''}>${v[0]}</option>`).join('')}</select></label>
+      <label class="field">Suivi par<select data-act="demSuivi" data-id="${d.id}"><option value="">Personne</option>${resps.map(p=>`<option value="${p.id}"${p.id===d.suivi_par?' selected':''}>${esc(displayName(p))}</option>`).join('')}</select></label></div>
+    <label class="field">Note interne<textarea rows="2" id="dn-${d.id}" placeholder="Rappelé le…, rendez-vous, suite à donner">${esc(d.note||'')}</textarea></label>
+    <div class="btnrow"><button class="btn ghost sm" type="button" data-act="demNote" data-id="${d.id}">Enregistrer la note</button><button class="btn ghost sm" type="button" data-act="demDel" data-id="${d.id}">Supprimer</button></div>
+  </section>`).join(''):`<p class="empty">Aucune demande ${tab==='nouvelle'?'nouvelle':'dans « '+lbl[tab]+' »'}.</p>`}
+  <p class="note">Une demande refusée ou terminée peut être archivée puis supprimée : on ne garde pas les données personnelles plus de 2 ans.</p></div>`;
+}
+
+/* --- Espace community manager --- */
+const RESEAUX={instagram:['Instagram','#E1306C'],tiktok:['TikTok','#141414'],facebook:['Facebook','#1877F2'],linkedin:['LinkedIn','#0A66C2'],autre:['Autre','#8A8578']};
+const FORMATS={post:'Post',carrousel:'Carrousel',reel:'Reel',story:'Story',video:'Vidéo'};
+const PUB_ST={idee:['Brouillon','b-mute'],a_valider:['À valider','b-gold'],validee:['Validée','b-info'],programmee:['Programmée','b-info'],publiee:['Publiée','b-good']};
+const PUB_STEPS=['idee','a_valider','validee','programmee','publiee'];
+async function loadCmInfos(){cmInfos={loading:true};try{const {data,error}=await sb.rpc('cm_infos');if(error)throw error;cmInfos=data||{top:[]}}catch(e){cmInfos={top:[],err:true}}if(route==='cm')render()}
+function pubForm(p){
+  const isNew=!p;p=p||{jour:ui.cmJour||todayISO(),reseau:'instagram',format:'post',statut:'idee'};const R=isResp(me);
+  const vis=PHOTOS.concat(Object.values({a:SITE+'hero.jpg',b:SITE+'univers.jpg',c:SITE+'maison.jpg',d:SITE+'tradition.jpg',e:SITE+'experience.jpg'}));
+  return `<form class="grid" style="gap:10px" data-pubform="${p.id||'new'}" novalidate>
+    <div class="row2"><label class="field">Date<input name="jour" type="date" value="${esc(p.jour)}"></label><label class="field">Heure<input name="heure" type="time" value="${esc(p.heure?String(p.heure).slice(0,5):'')}"></label></div>
+    <div class="row2"><label class="field">Réseau<select name="reseau">${Object.entries(RESEAUX).map(([k,v])=>`<option value="${k}"${k===p.reseau?' selected':''}>${v[0]}</option>`).join('')}</select></label><label class="field">Format<select name="format">${Object.entries(FORMATS).map(([k,v])=>`<option value="${k}"${k===p.format?' selected':''}>${v}</option>`).join('')}</select></label></div>
+    <label class="field">Titre (pour l’équipe)<input name="titre" value="${esc(p.titre||'')}" placeholder="Lancement du flan praliné"></label>
+    <label class="field">Légende<textarea name="texte" rows="4" placeholder="Le texte publié">${esc(p.texte||'')}</textarea></label>
+    <div class="row2"><label class="field">Hashtags<input name="hashtags" value="${esc(p.hashtags||'')}" placeholder="#flan #montpellier"></label><label class="field">Parfum mis en avant<select name="parfum_id"><option value="">Aucun</option>${parfums.map(x=>`<option value="${x.id}"${x.id===p.parfum_id?' selected':''}>${esc(x.nom)}</option>`).join('')}</select></label></div>
+    <label class="field">Visuel (photothèque ou lien)<input name="visuel" list="pubVis" value="${esc(p.visuel||'')}" placeholder="Choisir une photo ou coller un lien"><datalist id="pubVis">${vis.map(v=>`<option value="${esc(v)}">`).join('')}</datalist></label>
+    ${isNew?`<label class="check"><input type="checkbox" name="envoyer"${R?'':' checked'}><span>${R?'Valider directement':'Envoyer en validation aux responsables'}</span></label>`:''}
+    <p class="msg err" hidden></p><div class="btnrow"><button class="btn sm" type="submit">${isNew?'Enregistrer':'Enregistrer les modifications'}</button><button class="btn ghost sm" type="button" data-act="pubCancel">Annuler</button></div></form>`;
+}
+function pubCard(p){
+  const R=isResp(me),pf=parfum(p.parfum_id),au=prof(p.auteur),st=PUB_ST[p.statut];
+  const vis=p.visuel&&/\.(jpe?g|png|webp)$/i.test(p.visuel)&&!/^javascript:/i.test(p.visuel)?`<img src="${esc(p.visuel)}" alt="" style="width:100%;max-width:220px;aspect-ratio:1;object-fit:cover;border-radius:12px">`:'';
+  const acts=[];
+  if(p.statut==='idee')acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="a_valider" data-id="${p.id}">Envoyer en validation</button>`);
+  if(p.statut==='a_valider'&&R)acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="validee" data-id="${p.id}">Valider</button><button class="btn ghost sm" type="button" data-act="pubRetour" data-id="${p.id}">Demander des modifications</button>`);
+  if(p.statut==='validee')acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="programmee" data-id="${p.id}">Marquer programmée</button>`);
+  if(p.statut==='validee'||p.statut==='programmee')acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="publiee" data-id="${p.id}">Marquer publiée</button>`);
+  return `<section class="card" style="gap:8px" id="pub-${p.id}">
+    <div class="envoi-h"><span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="badge" style="background:${RESEAUX[p.reseau][1]};color:#fff">${RESEAUX[p.reseau][0]}</span><span class="badge b-mute">${FORMATS[p.format]}</span><span class="badge ${st[1]}">${st[0]}</span></span><span class="meta">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''}</span></div>
+    <div class="steps">${PUB_STEPS.map((s,k)=>{const i=PUB_STEPS.indexOf(p.statut);return `<span class="${k<i?'done':k===i?'now':''}">${PUB_ST[s][0]}</span>`}).join('')}</div>
+    ${ui.pubEdit===p.id?pubForm(p):`<h2 style="margin:0">${esc(p.titre)}</h2>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">${vis}<div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px">${p.texte?`<p style="margin:0;white-space:pre-wrap">${esc(p.texte)}</p>`:'<span class="meta">Pas encore de légende.</span>'}${p.hashtags?`<span style="color:var(--info,#2D6A9F);font-size:14px">${esc(p.hashtags)}</span>`:''}${pf?`<span class="chip" style="align-self:flex-start">${sw(pf)}${esc(pf.nom)}</span>`:''}<span class="meta">Par ${esc(au?displayName(au):'Compte supprimé')}</span></div></div>
+    ${p.commentaire&&p.statut==='idee'?`<p class="msg err" style="margin:0">Retour des responsables : ${esc(p.commentaire)}</p>`:''}
+    ${p.statut==='publiee'?`<div class="grid" style="gap:8px"><b style="font-size:14px">Résultats</b><div class="qty">${[['vues','Vues'],['likes','J’aime'],['commentaires','Commentaires'],['partages','Partages']].map(([k,l])=>`<label><span>${l}</span><input type="number" min="0" inputmode="numeric" data-act="pubStat" data-k="${k}" data-id="${p.id}" value="${p[k]!=null?p[k]:''}" placeholder="0"></label>`).join('')}</div><label class="field">Lien de la publication<input data-act="pubLien" data-id="${p.id}" type="url" value="${esc(p.lien||'')}" placeholder="https://www.instagram.com/p/…"></label></div>`:''}
+    ${ui.pubRetour===p.id?`<div class="grid" style="gap:8px"><label class="field">Ce qu’il faut changer<textarea id="prc-${p.id}" rows="2"></textarea></label><div class="btnrow"><button class="btn sm" type="button" data-act="pubRetourOk" data-id="${p.id}">Renvoyer au community manager</button><button class="btn ghost sm" type="button" data-act="pubRetour" data-id="">Annuler</button></div></div>`:''}
+    <div class="btnrow">${acts.join('')}<button class="btn ghost sm" type="button" data-act="pubEdit" data-id="${p.id}">Modifier</button><button class="btn ghost sm" type="button" data-act="pubDel" data-id="${p.id}">Supprimer</button></div>`}
+  </section>`;
+}
+function cmView(){
+  const m=ui.cmMois||monthOf(todayISO()),R=isResp(me),t=todayISO();
+  if(!cmInfos)loadCmInfos();
+  const inM=publications.filter(p=>monthOf(p.jour)===m);
+  const first=parseISO(m+'-01'),lead=(first.getDay()+6)%7,last=+lastOfMonth(m).slice(8);
+  let cells='';for(let i=0;i<lead;i++)cells+='<div></div>';
+  for(let n=1;n<=last;n++){const d=m+'-'+pad(n);const ps=inM.filter(p=>p.jour===d).sort((a,b)=>String(a.heure||'').localeCompare(String(b.heure||'')));const fete=calendrier.filter(c=>c.debut<=d&&c.fin>=d&&c.type!=='vacances');
+    cells+=`<div class="agday${d===t?' today':''}${ui.cmJour===d?' sel':''}"><button type="button" class="agn" data-act="cmJour" data-d="${d}" aria-label="Choisir le ${esc(fmtDay(d))}" style="border:0;background:none;cursor:pointer;font:inherit;padding:0;text-align:left">${n}</button>${fete.map(c=>`<span style="font-size:10.5px;color:var(--muted)">${esc(c.libelle)}</span>`).join('')}${ps.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:block;padding:3px 6px;border-radius:6px;font-size:11px;line-height:1.3;background:${RESEAUX[p.reseau][1]};color:#fff;overflow-wrap:anywhere;${p.statut==='idee'?'opacity:.55':''}">${p.heure?hhmm(p.heure)+' · ':''}${esc(p.titre)}</button>`).join('')}</div>`}
+  const aValider=publications.filter(p=>p.statut==='a_valider').sort((a,b)=>a.jour.localeCompare(b.jour));
+  const sel=ui.cmSel&&publications.find(p=>p.id===ui.cmSel);
+  const pub=inM.filter(p=>p.statut==='publiee'),vues=pub.reduce((a,p)=>a+(p.vues||0),0),eng=pub.reduce((a,p)=>a+(p.likes||0)+(p.commentaires||0)+(p.partages||0),0);
+  const prevM=isoOf(new Date(first.getFullYear(),first.getMonth()-1,1)).slice(0,7);
+  const st=(r,mm)=>reseauxStats.find(s=>s.reseau===r&&String(s.mois).slice(0,7)===mm)||{};
+  const semaine=publications.filter(p=>p.jour>=t&&p.jour<=addDays(t,6)).sort((a,b)=>(a.jour+(a.heure||'')).localeCompare(b.jour+(b.heure||'')));
+  const top=(cmInfos&&cmInfos.top)||[];
+  return `<div class="page">
+  <div class="head"><div><h1>Réseaux sociaux</h1><p>${R?'Calendrier éditorial du community manager, validations et résultats':'Calendrier éditorial, publications et résultats'}</p></div>
+    <div class="btnrow"><div class="daynav"><button class="iconbtn" type="button" data-act="cmMois" data-d="-1" aria-label="Mois précédent">‹</button><b>${esc(monthLabel(m))}</b><button class="iconbtn" type="button" data-act="cmMois" data-d="1" aria-label="Mois suivant">›</button></div>${ui.cmNew?'':'<button class="btn sm" type="button" data-act="cmNew">+ Nouvelle publication</button>'}</div></div>
+  ${ui.cmNew?`<section class="card"><h2>Nouvelle publication</h2>${pubForm(null)}</section>`:''}
+  ${R&&aValider.length?`<section class="grid" style="gap:12px"><h2 style="margin:0">À valider <span class="badge b-gold">${aValider.length}</span></h2>${aValider.map(pubCard).join('')}</section>`:''}
+  ${sel&&!(R&&sel.statut==='a_valider')?`<div class="grid" style="gap:8px"><div class="btnrow"><button class="btn ghost sm" type="button" data-act="cmSel" data-id="">← Fermer</button></div>${pubCard(sel)}</div>`:''}
+  <div class="grid g4">
+    <div class="card kpi"><span class="lbl">Publications du mois</span><span class="val num">${inM.length}</span><span class="hint">${inM.filter(p=>p.statut==='idee').length} brouillon(s) · ${inM.filter(p=>p.statut==='a_valider').length} à valider</span></div>
+    <div class="card kpi"><span class="lbl">Publiées</span><span class="val num">${pub.length}</span><span class="hint">${inM.filter(p=>p.statut==='programmee'||p.statut==='validee').length} prête(s) à publier</span></div>
+    <div class="card kpi"><span class="lbl">Vues</span><span class="val num">${vues.toLocaleString('fr-FR')}</span><span class="hint">publications du mois</span></div>
+    <div class="card kpi"><span class="lbl">Interactions</span><span class="val num">${eng.toLocaleString('fr-FR')}</span><span class="hint">j’aime + commentaires + partages</span></div>
+  </div>
+  <div class="grid g21" style="align-items:start">
+    <section class="card"><h2>Calendrier éditorial</h2><div class="tbl-wrap"><div class="agrid">${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(h=>`<span class="agh">${h}</span>`).join('')}${cells}</div></div>
+      <div class="chips">${Object.values(RESEAUX).map(v=>`<span class="chip"><span class="sw" style="background:${v[1]}"></span>${v[0]}</span>`).join('')}<span class="chip" style="opacity:.6">Pâle = brouillon</span></div>
+      <p class="note">Clique sur un numéro de jour pour y créer une publication, sur une publication pour l’ouvrir. Les fêtes viennent du calendrier de la répartition.</p></section>
+    <div class="grid" style="gap:16px">
+      <section class="card"><h2>Cette semaine</h2>${semaine.length?semaine.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--cream)"><span style="min-width:0"><b style="font-size:14px">${esc(p.titre)}</b><small style="display:block;color:var(--muted)">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''} · ${RESEAUX[p.reseau][0]}</small></span><span class="badge ${PUB_ST[p.statut][1]}" style="align-self:center">${PUB_ST[p.statut][0]}</span></button>`).join(''):'<p class="empty">Rien de prévu cette semaine.</p>'}</section>
+      <section class="card"><h2>Idées tirées des ventes</h2>${top.length?`<p class="sub">Les parfums les plus vendus ces 7 derniers jours :</p><div class="chips">${top.map((x,i)=>`<span class="chip">${x.photo?`<img class="sw ph" src="${esc(x.photo)}" alt="">`:''}${i+1}. ${esc(x.nom)}</span>`).join('')}</div><p class="note">Un post « coulisses de la fabrication » sur le n° 1 avant le week-end peut l’appuyer.</p>`:'<p class="empty">Les idées arrivent quand les boutiques font leurs clôtures.</p>'}
+        <p class="note">Le chiffre d’affaires, la paie et les marges ne sont pas visibles depuis cet espace.</p></section>
+    </div>
+  </div>
+  <section class="card"><h2>Abonnés · ${esc(monthLabel(m))}</h2>
+    <div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th>Réseau</th><th>Abonnés</th><th>Mois précédent</th><th>Évolution</th><th>Objectif</th></tr></thead><tbody>
+    ${['instagram','tiktok','facebook','linkedin'].map(r=>{const c=st(r,m),pv=st(r,prevM);const dlt=c.abonnes!=null&&pv.abonnes!=null?c.abonnes-pv.abonnes:null;const obj=c.objectif;
+      return `<tr><td><span class="chip"><span class="sw" style="background:${RESEAUX[r][1]}"></span>${RESEAUX[r][0]}</span></td>
+      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="abonnes" data-m="${m}" value="${c.abonnes!=null?c.abonnes:''}" style="width:110px" aria-label="Abonnés ${RESEAUX[r][0]}"></td>
+      <td class="num">${pv.abonnes!=null?pv.abonnes.toLocaleString('fr-FR'):'—'}</td>
+      <td class="num" style="color:${dlt==null?'inherit':dlt>=0?'var(--good)':'var(--bad)'}">${dlt==null?'—':(dlt>=0?'+':'')+dlt.toLocaleString('fr-FR')}</td>
+      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="objectif" data-m="${m}" value="${obj!=null?obj:''}" style="width:110px" aria-label="Objectif ${RESEAUX[r][0]}">${obj&&c.abonnes!=null?` <small class="meta">${Math.round(c.abonnes*100/obj)} %</small>`:''}</td></tr>`}).join('')}
+    </tbody></table></div><p class="note">Note le nombre d’abonnés en début ou fin de mois, toujours au même moment, pour comparer.</p></section>
+  ${(()=>{const autres=inM.filter(p=>p.id!==ui.cmSel&&!(R&&p.statut==='a_valider')).sort((a,b)=>(a.jour+(a.heure||'')).localeCompare(b.jour+(b.heure||'')));return autres.length?`<section class="grid" style="gap:12px"><h2 style="margin:0">Toutes les publications du mois</h2>${autres.map(pubCard).join('')}</section>`:''})()}
+  <p class="note">Circuit : brouillon → à valider (envoyé par le community manager) → validée (par un responsable) → programmée → publiée. Si la légende change après validation, la publication repasse « à valider ».</p></div>`;
+}
+function csvDownload(rows,name){const csv='﻿'+rows.map(r=>r.map(v=>{const s=String(v==null?'':v);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
 /* ---------- Actions ---------- */
 async function act(fn,okMsg){try{const r=await fn();if(r&&r.error)throw r.error;if(okMsg)toast(okMsg);reload();return true}catch(e){toast(frErr(e));return false}}
 function armed(t,label){if(t.dataset.armed)return true;t.dataset.armed='1';const old=t.textContent;t.textContent=label||'Confirmer ?';setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent=old}},3500);return false}
@@ -1417,6 +1727,8 @@ document.addEventListener('click',async ev=>{
   if(t.id==='toActivate')return setAuthMode(authMode==='login'?'activate':'login');
   if(t.id==='toReset')return setAuthMode('reset');
   if(t.id==='toClient')return setAuthMode('client');
+  if(t.id==='toEnsemble')return setAuthMode('ensemble');
+  if(t.id==='toLogin'||t.id==='toLogin2'){if(location.hash==='#ensemble')history.replaceState(null,'',location.pathname);return setAuthMode('login')}
   const a=t.dataset.act,id=t.dataset.id;if(!a)return;
   switch(a){
     case 'logout':await sb.auth.signOut();return;
@@ -1502,6 +1814,29 @@ document.addEventListener('click',async ev=>{
     case 'mois':{const [y,mo]=(ui.mois||monthOf(todayISO())).split('-').map(Number);const d=new Date(y,mo-1+(+t.dataset.d),1);ui.mois=isoOf(d).slice(0,7);compta=null;return render()}
     case 'ecrPaye':{const r=await act(()=>sb.from('ecritures').update({paye:true}).eq('id',id),'Marqué payé');if(r&&compta)loadCompta(compta.mois);return}
     case 'ecrDel':{if(!armed(t))return;const r=await act(()=>sb.from('ecritures').delete().eq('id',id),'Écriture supprimée');if(r&&compta)loadCompta(compta.mois);return}
+    case 'demAutre':ui.demOk=false;return render();
+    case 'cliDel':{if(!armed(t,'Confirmer la suppression'))return;t.disabled=true;try{const {error}=await sb.rpc('supprimer_compte',{p_user:id});if(error)throw error;toast('Compte client supprimé : '+t.dataset.nom);loadClients()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'cliCsv':{const L=(clientsData&&clientsData.list)||[];return csvDownload([['Prénom','Nom','E-mail','Téléphone','Inscrit le','Commandes','Total','Dernier retrait']].concat(L.map(c=>[c.prenom,c.nom,c.email,c.telephone,c.created_at?new Date(c.created_at).toLocaleDateString('fr-FR'):'',c.nb,String(c.total).replace('.',','),c.derniere||''])),'clients-'+todayISO()+'.csv')}
+    case 'ctTab':ui.ctTab=t.dataset.t;ui.ctAdd=false;ui.ctEdit=null;return render();
+    case 'ctAdd':ui.ctAdd=true;ui.ctEdit=null;return render();
+    case 'ctEdit':ui.ctEdit=id;ui.ctAdd=false;return render();
+    case 'ctCancel':ui.ctAdd=false;ui.ctEdit=null;return render();
+    case 'ctDel':if(!armed(t))return;return act(()=>sb.from('contacts').delete().eq('id',id),'Contact supprimé');
+    case 'demTab':ui.demTab=t.dataset.t;return render();
+    case 'demType':ui.demType=t.dataset.t;return render();
+    case 'demCopy':return copyText(APP_URL+'#ensemble');
+    case 'demNote':{const el=$('#dn-'+id);return act(()=>sb.from('demandes').update({note:el&&el.value.trim()||null}).eq('id',id),'Note enregistrée')}
+    case 'demDel':if(!armed(t,'Confirmer la suppression'))return;return act(()=>sb.from('demandes').delete().eq('id',id),'Demande supprimée');
+    case 'cmMois':{const [y,mo]=(ui.cmMois||monthOf(todayISO())).split('-').map(Number);ui.cmMois=isoOf(new Date(y,mo-1+(+t.dataset.d),1)).slice(0,7);ui.cmSel=null;return render()}
+    case 'cmNew':ui.cmNew=true;ui.pubEdit=null;render();window.scrollTo({top:0,behavior:'smooth'});return;
+    case 'cmJour':ui.cmJour=t.dataset.d;ui.cmNew=true;ui.pubEdit=null;render();window.scrollTo({top:0,behavior:'smooth'});return;
+    case 'cmSel':ui.cmSel=id||null;ui.pubEdit=null;ui.pubRetour=null;render();if(id){const el=document.getElementById('pub-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}return;
+    case 'pubCancel':ui.cmNew=false;ui.pubEdit=null;ui.cmJour=null;return render();
+    case 'pubEdit':ui.pubEdit=id;ui.cmNew=false;return render();
+    case 'pubSt':return act(()=>sb.from('publications').update(t.dataset.s==='a_valider'?{statut:'a_valider',commentaire:null}:{statut:t.dataset.s}).eq('id',id),{a_valider:'Envoyé aux responsables',validee:'Publication validée',programmee:'Marquée programmée',publiee:'Marquée publiée : note ses résultats'}[t.dataset.s]);
+    case 'pubRetour':ui.pubRetour=id||null;return render();
+    case 'pubRetourOk':{const c=($('#prc-'+id)||{}).value||'';if(!c.trim())return toast('Écris ce qu’il faut changer');ui.pubRetour=null;return act(()=>sb.from('publications').update({statut:'idee',commentaire:c.trim()}).eq('id',id),'Renvoyé au community manager')}
+    case 'pubDel':if(!armed(t))return;ui.cmSel=null;return act(()=>sb.from('publications').delete().eq('id',id),'Publication supprimée');
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
     case 'pinOff':return startPinFlow('disable');
@@ -1522,6 +1857,10 @@ document.addEventListener('change',ev=>{
     if(a==='recQte'){const q=parseFloat(String(x.value).replace(',','.'))||0;act(()=>sb.from('recettes').upsert({parfum_id:x.dataset.p,ingredient_id:x.dataset.i,quantite:q}),'Recette mise à jour');return}
     if(a==='reglage'){const v=parseFloat(String(x.value).replace(',','.'));if(!isFinite(v))return;act(()=>sb.from('reglages').upsert({cle:x.dataset.k,valeur:v}),'Réglage enregistré');return}
   }
+  if(ev.target.name==='dType'){demTypeUpdate(ev.target.closest('form'));return}
+  const pst=ev.target.closest('[data-act="pubStat"]');if(pst){const row={};row[pst.dataset.k]=pst.value===''?null:int(pst.value);act(()=>sb.from('publications').update(row).eq('id',pst.dataset.id),'Résultat enregistré');return}
+  const pl=ev.target.closest('[data-act="pubLien"]');if(pl){const v=pl.value.trim();if(v&&!/^https?:\/\//i.test(v))return toast('Le lien doit commencer par https://');act(()=>sb.from('publications').update({lien:v||null}).eq('id',pl.dataset.id),'Lien enregistré');return}
+  const rs=ev.target.closest('[data-act="rsSet"]');if(rs){const row={reseau:rs.dataset.r,mois:rs.dataset.m+'-01'};const cur=reseauxStats.find(x=>x.reseau===row.reseau&&String(x.mois).slice(0,7)===rs.dataset.m)||{};row.abonnes=cur.abonnes!=null?cur.abonnes:null;row.objectif=cur.objectif!=null?cur.objectif:null;row[rs.dataset.k]=rs.value===''?null:int(rs.value);act(()=>sb.from('reseaux_stats').upsert(row),'Enregistré');return}
   const cj=ev.target.closest('[data-act="cmdJour"]');if(cj){ui.cmdJour=cj.value;ui.cmdHeure=null;ui.cmdNote=($('#cNote')||{}).value||'';return render()}
   const ch=ev.target.closest('[data-act="cmdHeure"]');if(ch){ui.cmdHeure=ch.value;return}
   const cp=ev.target.closest('[data-act="cmdPay"]');if(cp){act(()=>sb.from('commandes').update({paiement:cp.value}).eq('id',cp.dataset.id),'Paiement mis à jour');return}
@@ -1534,9 +1873,12 @@ document.addEventListener('change',ev=>{
   if(a==='setRole')act(()=>sb.from('profiles').update({role:s.value}).eq('id',id),'Rôle mis à jour');
   if(a==='setBorneLieu')act(()=>sb.from('profiles').update({boutique_id:s.value||null}).eq('id',id),'Lieu de la borne mis à jour');
   if(a==='setStatut')act(()=>sb.from('envois').update({statut:s.value}).eq('id',id),'Statut mis à jour');
+  if(a==='demStatut')act(()=>sb.from('demandes').update({statut:s.value}).eq('id',id),'Statut mis à jour');
+  if(a==='demSuivi')act(()=>sb.from('demandes').update({suivi_par:s.value||null}).eq('id',id),'Suivi mis à jour');
   if(a==='setLivreur')act(()=>sb.from('envois').update({livreur_id:s.value||null}).eq('id',id),'Livreur mis à jour');
 });
 document.addEventListener('input',ev=>{
+  const q=ev.target.closest('#cliQ,#ctQ');if(q){const v=q.value.trim().toLowerCase();document.querySelectorAll('#main [data-q]').forEach(r=>{r.hidden=!!v&&!r.dataset.q.includes(v)});return}
   const i=ev.target.closest('#clotureForm input[data-row]');if(!i)return;
   const pid=i.dataset.row,tr=i.closest('tr');const st=+tr.dataset.stock;
   const used=['v','j','c','d'].reduce((a,k)=>a+int(($('#c'+k+'-'+pid)||{}).value),0);
@@ -1547,6 +1889,7 @@ document.addEventListener('submit',async ev=>{
   const btn=f.querySelector('button[type=submit]');
   const fail=(sel,m)=>{const e=typeof sel==='string'?$(sel):sel;if(e){e.textContent=m;e.hidden=false}if(btn)btn.disabled=false};
   if(f.id==='authForm')return submitAuth();
+  if(f.id==='demandeForm')return envoyerDemande(f,btn);
   if(f.id==='newPwForm'){
     const pw=$('#newPw').value;if(pw.length<10)return fail('#newPwErr','10 caractères minimum.');
     const {error}=await sb.auth.updateUser({password:pw});if(error)return fail('#newPwErr',frErr(error));
@@ -1679,6 +2022,27 @@ document.addEventListener('submit',async ev=>{
     if(row.fin<row.debut)return fail('#caErr','La fin doit être après le début.');
     const {error}=await sb.from('calendrier').insert(row);if(error)return fail('#caErr',frErr(error));
     rep.target=null;toast('Ajouté au calendrier');reload();return;
+  }
+  if(f.dataset.contactform){
+    const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');
+    if(!d.nom.trim())return fail(err,'Indique le nom du contact.');
+    if(d.email.trim()&&!/^\S+@\S+\.\S+$/.test(d.email.trim()))return fail(err,'Adresse e-mail invalide.');
+    const row={categorie:d.categorie};['nom','societe','fonction','telephone','email','adresse','note'].forEach(k=>row[k]=d[k].trim()||null);
+    const isNew=f.dataset.contactform==='new';
+    const {error}=isNew?await sb.from('contacts').insert(row):await sb.from('contacts').update(row).eq('id',f.dataset.contactform);
+    if(error)return fail(err,/contacts/.test(error.message||'')&&/exist/.test(error.message||'')?'Base pas à jour : lance etape6.sql dans Supabase.':frErr(error));
+    ui.ctAdd=false;ui.ctEdit=null;ui.ctTab=row.categorie;toast(isNew?'Contact ajouté':'Contact modifié');reload();return;
+  }
+  if(f.dataset.pubform){
+    const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');
+    if(!d.titre.trim())return fail(err,'Donne un titre à la publication.');if(!d.jour)return fail(err,'Choisis la date.');
+    const v=d.visuel.trim();if(v&&!/^(https?:\/\/|photos\/)/i.test(v))return fail(err,'Visuel : choisis une photo de la liste ou colle un lien https://');
+    const row={jour:d.jour,heure:d.heure||null,reseau:d.reseau,format:d.format,titre:d.titre.trim(),texte:d.texte.trim()||null,hashtags:d.hashtags.trim()||null,parfum_id:d.parfum_id||null,visuel:v||null};
+    const isNew=f.dataset.pubform==='new';
+    if(isNew)row.statut=d.envoyer?(isResp(me)?'validee':'a_valider'):'idee';
+    const {error}=isNew?await sb.from('publications').insert(row):await sb.from('publications').update(row).eq('id',f.dataset.pubform);
+    if(error)return fail(err,frErr(error));
+    ui.cmNew=false;ui.pubEdit=null;ui.cmJour=null;ui.cmMois=monthOf(row.jour);toast(isNew?(row.statut==='a_valider'?'Envoyé en validation':'Publication enregistrée'):'Publication modifiée');reload();return;
   }
   if(f.dataset.shopform){
     const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');
