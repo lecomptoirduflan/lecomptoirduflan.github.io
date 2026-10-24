@@ -83,7 +83,7 @@ const POLES=[
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies'),T('Contacts','Équipe, fournisseurs, clients pro','#contacts')]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients')]}
 ];
-const LABO_TILES=[T('Production','Envois à préparer, plaques, réassorts','#production',null,'labo'),T('Postes et stocks','Chambres froides, congélateurs, rangements','#labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
+const LABO_TILES=[T('Production','Flans à produire, réassorts','#production',null,'labo'),T('Postes et stocks','Chambres froides, congélateurs, rangements','#labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
 const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
 const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
@@ -157,8 +157,12 @@ const counts=()=>({
 function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)}
 const pertesOf=l=>(l.quarts_jetes||0)+(l.quarts_casses||0)+(l.quarts_donnes||0);
 
-/* ---------- Stock en parts (un flan = 4 parts, vendable 3 jours à partir de sa production) ---------- */
-const PARTS=4, DUREE=3;
+/* ---------- Stock en parts (envois en plaques de PP() parts ; vendable 3 jours à partir de la production) ---------- */
+const PARTS=4, DUREE=3; // PARTS : parts d'un flan entier (commandes, recettes)
+const PU=e=>(e&&e.parts_unite)||4; // parts par unité d'envoi : 4 = anciens envois (flans), PP() = plaques (répartition), 1 = parts (réassorts)
+const UNIT_LBL=e=>{const u=PU(e);return u===1?['part','parts']:u===PARTS?['flan','flans']:['plaque','plaques']};
+const qteTxt=(e,n)=>n+' '+(n>1?UNIT_LBL(e)[1]:UNIT_LBL(e)[0]);
+const flansDe=parts=>Math.ceil(parts/PARTS);
 const lastDay=d=>addDays(d,DUREE-1);
 function takeFrom(lots,q,dayX,mode){
   // mode 'vente' : lots encore vendables, du plus ancien au plus récent ; 'jete' : périmés d'abord ; sinon tout
@@ -171,7 +175,7 @@ function takeFrom(lots,q,dayX,mode){
 }
 function arrivals(b,p,d,onlyDelivered){
   const out=[];
-  envoisAll.filter(e=>e.boutique_id===b&&e.jour===d&&(onlyDelivered?e.statut==='livre':!['signale','refuse'].includes(e.statut))).forEach(e=>(e.envoi_lignes||[]).forEach(l=>{if(l.parfum_id===p&&l.quantite>0)out.push({d:e.produit_le||addDays(d,-1),q:l.quantite*PARTS})}));
+  envoisAll.filter(e=>e.boutique_id===b&&e.jour===d&&(onlyDelivered?e.statut==='livre':!['signale','refuse'].includes(e.statut))).forEach(e=>(e.envoi_lignes||[]).forEach(l=>{if(l.parfum_id===p&&l.quantite>0)out.push({d:e.produit_le||addDays(d,-1),q:l.quantite*PU(e)})}));
   return out;
 }
 const clotureLine=(b,p,d)=>{const c=cloturesAll.find(x=>x.boutique_id===b&&x.jour===d);return c?(c.cloture_lignes||[]).find(l=>l.parfum_id===p)||{}:null};
@@ -270,6 +274,7 @@ async function loadAll(){
   if(isResp(me)){const i=await sb.from('invitations').select('*').order('created_at',{ascending:false});invitations=i.data||[]}else invitations=[];
   if(me&&me.role!=='borne'){
     const pr=await sb.from('parametres').select('*');parametres={};(pr.data||[]).forEach(x=>parametres[x.cle]=x.valeur);
+    if(isResp(me)&&parametres.mails&&!parametres.mails.url&&/^https:/.test(APP_URL)){parametres.mails.url=APP_URL;sb.from('parametres').upsert({cle:'mails',valeur:parametres.mails}).then(()=>{},()=>{})}
     if(me.role==='client'){const c=await sb.from('commandes').select('*, commande_lignes(*)').eq('client_id',user.id).order('retrait_jour',{ascending:false}).limit(50);commandesAll=c.data||[];}
     else if(isResp(me)||isLabo(me)||me.role==='vendeur'){const c=await sb.from('commandes').select('*, commande_lignes(*)').gte('retrait_jour',addDays(todayISO(),-21)).lte('retrait_jour',addDays(todayISO(),90)).order('retrait_jour').order('retrait_heure');commandesAll=c.data||[];if(c.error&&route==='commandes')toast('Base pas à jour : lance etape5.sql dans Supabase.');}
   }
@@ -393,7 +398,7 @@ function dashView(){
   const pend=invitations.filter(i=>!i.used_at);
   const shopsOn=boutiques.filter(b=>b.actif);
   const sent=envois.filter(e=>!['signale','refuse'].includes(e.statut));
-  const flans=sent.reduce((a,e)=>a+lineTotal(e.envoi_lignes),0);
+  const flans=fmtPl(sent.reduce((a,e)=>a+lineTotal(e.envoi_lignes)*PU(e),0)/PP());
   const ca=clotures.reduce((a,c)=>a+caOf(c),0);
   const shopsToday=[...new Set(planning.filter(p=>p.jour===day&&p.lieu==='boutique').map(p=>p.boutique_id))];
   const closed=clotures.length;
@@ -412,7 +417,7 @@ function dashView(){
   <div class="head"><div><h1>Tableau de bord</h1><p>Équipe, envois et ventes</p></div>${dayNav()}</div>
   <section class="grid g4">
     <div class="card kpi"><span class="lbl">Chiffre d’affaires</span><span class="val num">${eur(ca)}</span><span class="hint">${closed} clôture${closed>1?'s':''} reçue${closed>1?'s':''}${shopsToday.length?' sur '+shopsToday.length:''}</span></div>
-    <div class="card kpi"><span class="lbl">Flans envoyés</span><span class="val num">${flans}</span><span class="hint">${sent.length} envoi${sent.length>1?'s':''} · ${sent.filter(e=>e.type==='reassort').length} réassort${sent.filter(e=>e.type==='reassort').length>1?'s':''}</span></div>
+    <div class="card kpi"><span class="lbl">Plaques envoyées</span><span class="val num">${flans}</span><span class="hint">${sent.length} envoi${sent.length>1?'s':''} · ${sent.filter(e=>e.type==='reassort').length} réassort${sent.filter(e=>e.type==='reassort').length>1?'s':''}</span></div>
     <div class="card kpi"><span class="lbl">Réassorts à valider</span><span class="val num">${c.signale}</span><span class="hint">${c.signale?'<a href="#envois">Traiter</a>':'Rien en attente'}</span></div>
     <div class="card kpi"><span class="lbl">Équipe active</span><span class="val num">${act.length}</span><span class="hint">${planning.filter(p=>p.jour===day).length} affectation${planning.filter(p=>p.jour===day).length>1?'s':''} ce jour</span></div>
   </section>
@@ -478,11 +483,11 @@ function envoisView(){
   const sigHTML=sig.length?sig.map(e=>{const by=prof(e.signale_par);return `<div class="envoi${e.urgent?' hot':''}">
       <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b><span class="meta"> · réassort signalé à ${timeOf(e.created_at)} par ${esc(displayName(by))}</span></span>${e.urgent?'<span class="badge b-bad">Urgent</span>':''}</div>
       ${e.note?`<span style="font-size:14px">« ${esc(e.note)} »</span>`:''}
-      <div class="qty">${sortLines(e.envoi_lignes).map(l=>{const p=parfum(l.parfum_id)||{};return `<label>${sw(p)}<span>${esc(p.nom)} <small style="color:var(--muted)">(demandé ${l.demande??l.quantite})</small></span><input type="number" min="0" inputmode="numeric" id="rv-${l.id}" value="${l.quantite}" aria-label="${esc(p.nom)}"></label>`}).join('')}</div>
+      <div class="qty">${sortLines(e.envoi_lignes).map(l=>{const p=parfum(l.parfum_id)||{};return `<label>${sw(p)}<span>${esc(p.nom)} <small style="color:var(--muted)">(demandé ${l.demande??l.quantite} ${UNIT_LBL(e)[1]})</small></span><input type="number" min="0" inputmode="numeric" id="rv-${l.id}" value="${l.quantite}" aria-label="${esc(p.nom)}"></label>`}).join('')}</div>
       <div class="btnrow">${livreurSelect('rvl-'+e.id,null)}<button class="btn sm" type="button" data-act="rValider" data-id="${e.id}">Valider : labo + livreur</button><button class="btn danger sm" type="button" data-act="rRefuser" data-id="${e.id}">Refuser</button></div>
     </div>`}).join(''):'<p class="empty">Aucun réassort en attente.</p>';
   const flowHTML=flow.length?flow.map(e=>{const l=prof(e.livreur_id);return `<div class="envoi">
-      <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> <span class="badge ${e.type==='reassort'?'b-gold':'b-mute'}">${e.type==='reassort'?'Réassort':'Livraison du matin'}</span></span><span class="meta">${lineTotal(e.envoi_lignes)} flans · ${l?esc(displayName(l)):'sans livreur'}</span></div>
+      <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> <span class="badge ${e.type==='reassort'?'b-gold':'b-mute'}">${e.type==='reassort'?'Réassort':'Livraison du matin'}</span></span><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))} · ${l?esc(displayName(l)):'sans livreur'}</span></div>
       ${chipsOf(e.envoi_lignes)}${stepsOf(e)}
       <div class="btnrow"><label class="meta">Statut <select class="inline-sel" data-act="setStatut" data-id="${e.id}">${['valide','pret','en_route','livre','refuse'].map(s=>`<option value="${s}"${s===e.statut?' selected':''}>${STATUT[s][0]}</option>`).join('')}</select></label>
       <label class="meta">Livreur ${livreurSelect('fl-'+e.id,e.livreur_id||'none').replace('class="inline-sel"','class="inline-sel" data-act="setLivreur" data-id="'+e.id+'"')}</label>
@@ -492,7 +497,7 @@ function envoisView(){
       <div class="row2"><label class="field">Point de vente<select id="neShop">${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}">${esc(b.nom)}</option>`).join('')}</select></label>
       <label class="field">Type<select id="neType"><option value="matin">Livraison du matin</option><option value="reassort">Réassort</option></select></label></div>
       <label class="field">Livreur${livreurSelect('neLiv',null).replace('class="inline-sel"','class="inline-sel" style="min-height:48px;border-radius:12px"')}</label>
-      <div class="field">Quantités (flans entiers)${qtyGrid('ne',{},dispo())}</div>
+      <div class="field">Quantités : plaques de ${PP()} parts pour une livraison du matin, parts pour un réassort${qtyGrid('ne',{},dispo())}</div>
       <label class="field">Note<input id="neNote" placeholder="Facultatif"></label>
       <p class="msg err" id="neErr" hidden></p>
       <div class="btnrow"><button class="btn" type="submit">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="newEnvoi">Annuler</button></div>
@@ -527,7 +532,7 @@ function repRows(b,target){
     const st=stockForecast(b,p.id,target);
     const demand=h.base!=null?Math.round(h.base*(1+adj/100)):null;
     const need=demand!=null?Math.max(0,demand-st.usable):null;
-    const prop=need!=null?Math.ceil(need/PARTS):null;
+    const prop=need!=null?Math.ceil(need/PP()):null;
     return {p,h,st,demand,prop};
   });
 }
@@ -544,7 +549,7 @@ function repartitionView(){
     const ex=envoisAll.find(e=>e.jour===target&&e.boutique_id===b.id&&e.type==='matin'&&e.statut!=='refuse');
     const locked=ex&&ex.statut!=='valide';
     const q=rep.qty[b.id]||{};
-    let tot=0;rows.forEach(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);if(inc){totals[r.p.id]=(totals[r.p.id]||0)+v;tot+=v;if(v)repLines.push({b:b.id,p:r.p.id,parts:v*PARTS})}});grand+=inc?tot:0;
+    let tot=0;rows.forEach(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);if(inc){totals[r.p.id]=(totals[r.p.id]||0)+v;tot+=v;if(v)repLines.push({b:b.id,p:r.p.id,parts:v*PP()})}});grand+=inc?tot:0;
     const m=meteoOf(b.id,target),cal=calFor(b.id,target),adj=repAdj(b.id,target);
     const vend=planning.filter(p=>p.jour===target&&p.lieu==='boutique'&&p.boutique_id===b.id).map(p=>displayName(prof(p.user_id)));
     const noHist=rows.every(r=>r.h.base==null);
@@ -556,21 +561,21 @@ function repartitionView(){
       ${locked?`<p class="msg ok">Déjà parti au labo et marqué « ${esc(STATUT[ex.statut][0])} » : plus modifiable ici.</p>`:''}
       ${noHist?'<p class="note">Pas encore de clôtures pour cette boutique : pas de proposition, saisis les quantités.</p>':''}
       <div class="tbl-wrap"><table class="ptable" style="min-width:600px"><thead><tr><th>Parfum</th><th title="Parts vendues au dernier jour clôturé">Veille</th><th title="Moyenne des parts vendues le même jour de la semaine (4 dernières semaines)">Même jour</th><th title="Parts encore vendables demain">Stock demain</th><th title="Ventes prévues demain, en parts">Prévu</th><th>Proposé</th><th>À envoyer</th></tr></thead><tbody>
-      ${rows.map(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);return `<tr><td>${sw(r.p)} ${esc(r.p.nom)}</td><td class="num">${r.h.veille??'–'}</td><td class="num">${r.h.avgSame!=null?Math.round(r.h.avgSame)+' <small style="color:var(--muted)">('+r.h.same+' sem.)</small>':'–'}</td><td class="num">${r.st.usable} parts</td><td class="num">${r.demand??'–'}</td><td class="num">${r.prop!=null?r.prop+' fl.':'–'}</td><td><input type="number" min="0" inputmode="numeric" data-rep="qty" data-b="${b.id}" data-p="${r.p.id}" value="${v||''}" placeholder="0"${locked||!inc?' disabled':''} aria-label="${esc(r.p.nom)}, flans à envoyer"></td></tr>`}).join('')}
-      <tr class="total"><td>Total</td><td colspan="5"></td><td class="num">${tot} flans</td></tr></tbody></table></div>
+      ${rows.map(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);return `<tr><td>${sw(r.p)} ${esc(r.p.nom)}</td><td class="num">${r.h.veille??'–'}</td><td class="num">${r.h.avgSame!=null?Math.round(r.h.avgSame)+' <small style="color:var(--muted)">('+r.h.same+' sem.)</small>':'–'}</td><td class="num">${r.st.usable} parts</td><td class="num">${r.demand??'–'}</td><td class="num">${r.prop!=null?r.prop+' pl.':'–'}</td><td><input type="number" min="0" inputmode="numeric" data-rep="qty" data-b="${b.id}" data-p="${r.p.id}" value="${v||''}" placeholder="0"${locked||!inc?' disabled':''} aria-label="${esc(r.p.nom)}, plaques à envoyer"></td></tr>`}).join('')}
+      <tr class="total"><td>Total</td><td colspan="5"></td><td class="num">${tot} plaques</td></tr></tbody></table></div>
       <div class="btnrow"><label class="meta">Livreur <select class="inline-sel" data-rep="liv" data-b="${b.id}"${locked?' disabled':''}><option value="">Sans livreur</option>${livs.map(l=>`<option value="${l.id}"${(rep.liv[b.id]!=null?rep.liv[b.id]:defLiv)===l.id?' selected':''}>${esc(displayName(l))}${onTour.has(l.id)?' · en tournée':''}</option>`).join('')}</select></label>
       ${ex?`<span class="badge ${STATUT[ex.statut][1]}">Envoyé au labo · ${esc(STATUT[ex.statut][0])}</span>`:''}</div>
     </section>`}).join('');
   const tIds=Object.keys(totals).filter(k=>totals[k]>0).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
   return `<div class="page">
-  <div class="head"><div><h1>Répartition du ${esc(fmtDay(target))}</h1><p>Livraison du matin, préparée la veille par le labo. Quantités en flans entiers (4 parts).</p></div>${dayNav('Préparé le '+fmtDay(day))}</div>
+  <div class="head"><div><h1>Répartition du ${esc(fmtDay(target))}</h1><p>Livraison du matin, préparée la veille par le labo. Quantités en plaques (1 plaque = ${PP()} parts).</p></div>${dayNav('Préparé le '+fmtDay(day))}</div>
   ${(()=>{const cs=commandesAll.filter(c=>['nouvelle','confirmee'].includes(c.statut)&&c.retrait_jour===target);const n=cs.reduce((a,c)=>a+cmdFlans(c),0);return n?`<section class="card" style="border-color:var(--gold)"><h2>+ ${n} flan${n>1?'s':''} de commandes clients à retirer le ${esc(fmtDay(target))}</h2><p class="sub">À produire en plus de la répartition (${cs.length} commande${cs.length>1?'s':''}). Détail dans Commandes.</p></section>`:''})()}
-  <section class="card dark"><h2 style="color:var(--gold-l)">Total à produire : ${grand} flans</h2>
+  <section class="card dark"><h2 style="color:var(--gold-l)">Total : ${grand} plaques · ${(()=>{const t={};repLines.forEach(l=>t[l.p]=(t[l.p]||0)+l.parts);return Object.values(t).reduce((x,v)=>x+flansDe(v),0)})()} flans entiers à produire</h2>
     ${tIds.length?`<div class="chips">${tIds.map(id=>{const p=parfum(id)||{};return `<span class="chip" style="background:#2a2a2a;border-color:#3a3a3a;color:#FFF8EC">${sw(p)}${esc(p.nom)} <b>${totals[id]}</b></span>`}).join('')}</div>`:'<p class="sub">Aucune quantité pour l’instant.</p>'}
     <div class="btnrow"><button class="btn" type="button" data-act="repSend" style="background:var(--gold-l);color:var(--ink)">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="repReset">Revenir aux propositions</button></div>
     <p class="sub">Propositions = ventes prévues (60 % moyenne du même jour + 40 % veille, ajustées météo et calendrier) − stock encore vendable demain. Un flan se vend ${DUREE} jours après sa production.</p>
   </section>
-  ${plaquesTable(repLines,'Récap des plaques · '+fmtDay(target),'Parts par boutique et plaques à produire, d’après les quantités ci-dessous',isResp(me))}
+  ${plaquesTable(repLines,'Récap des plaques · '+fmtDay(target),'Plaques par boutique et à produire, d’après les quantités ci-dessous',isResp(me))}
   ${cards}
   ${isResp(me)?calendrierSection():''}
   </div>`;
@@ -594,17 +599,17 @@ function productionView(){
   const tmw=addDays(day,1);
   const act=envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret','en_route','livre'].includes(e.statut));
   const todo=act.filter(e=>e.statut==='valide');
-  const tot={},rest={};act.forEach(e=>(e.envoi_lignes||[]).forEach(l=>{tot[l.parfum_id]=(tot[l.parfum_id]||0)+l.quantite;if(e.statut==='valide')rest[l.parfum_id]=(rest[l.parfum_id]||0)+l.quantite}));
+  const tot={},rest={};act.forEach(e=>(e.envoi_lignes||[]).forEach(l=>{const q=(l.quantite||0)*PU(e);tot[l.parfum_id]=(tot[l.parfum_id]||0)+q;if(e.statut==='valide')rest[l.parfum_id]=(rest[l.parfum_id]||0)+q}));
   const ids=Object.keys(tot).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
-  const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
+  const sum=o=>Object.values(o).reduce((a,b)=>a+flansDe(b),0);
   const card=e=>`<div class="envoi${e.type==='reassort'?' hot':''}">
-    <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> ${e.type==='reassort'?'<span class="badge b-bad">Réassort'+(e.urgent?' urgent':'')+'</span>':`<span class="badge b-mute">Livraison ${e.jour===day?'du matin':'de demain matin'}</span>`}</span><span class="meta">${lineTotal(e.envoi_lignes)} flans</span></div>
+    <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> ${e.type==='reassort'?'<span class="badge b-bad">Réassort'+(e.urgent?' urgent':'')+'</span>':`<span class="badge b-mute">Livraison ${e.jour===day?'du matin':'de demain matin'}</span>`}</span><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))}</span></div>
     ${chipsOf(e.envoi_lignes)}${e.note?`<span class="meta">${esc(e.note)}</span>`:''}
     <div class="btnrow"><button class="btn sm" type="button" data-act="pret" data-id="${e.id}">C’est prêt</button><span class="meta">${e.livreur_id?'Livreur : '+esc(displayName(prof(e.livreur_id))):'Livreur pas encore choisi'}</span></div></div>`;
   const reas=todo.filter(e=>e.type==='reassort'),today=todo.filter(e=>e.type==='matin'&&e.jour===day),demain=todo.filter(e=>e.type==='matin'&&e.jour===tmw);
   const grp=(t,l)=>l.length?`<div class="grid" style="gap:10px"><div class="meta" style="font-weight:700">${t}</div>${l.map(card).join('')}</div>`:'';
   return `<div class="page">
-  <div class="head"><div><h1>Production</h1><p>${sum(rest)} flans encore à préparer · ${sum(tot)} au total (aujourd’hui et demain matin)</p></div>${dayNav()}</div>
+  <div class="head"><div><h1>Production</h1><p>${sum(rest)} flans entiers encore à produire · ${sum(tot)} au total (aujourd’hui et demain matin)</p></div>${dayNav()}</div>
   ${(()=>{const pj=plaquesFromEnvois(tmw).length?tmw:day;return plaquesTable(plaquesFromEnvois(pj),'Plaques pour la livraison du '+fmtDay(pj),'D’après la répartition envoyée au labo',isResp(me))})()}
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>À préparer <span class="badge ${todo.length?'b-info':'b-mute'}">${todo.length}</span></h2>
@@ -614,8 +619,8 @@ function productionView(){
     ${(()=>{const cs=commandesAll.filter(c=>c.statut==='confirmee'&&(c.retrait_jour===day||c.retrait_jour===tmw)).sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure));
       return cs.length?`<section class="card"><h2>Commandes clients à préparer <span class="badge b-info">${cs.length}</span></h2>${cs.map(c=>`<div class="envoi"><div class="envoi-h"><span><b>${esc(c.numero)}</b> · ${esc(c.client_nom)}</span><span class="meta">Retrait ${esc(retraitTxt(c))}</span></div>${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}<div class="btnrow"><button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="prete">Commande prête</button></div></div>`).join('')}</section>`:''})()}
     <section class="card"><h2>Total par parfum</h2>
-      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Reste</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${rest[id]||0}</b></td><td class="num">${tot[id]}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
-      <p class="note">En flans entiers. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
+      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Flans à produire</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${flansDe(rest[id]||0)}</b> <small class="meta">${rest[id]||0} p.</small></td><td class="num">${flansDe(tot[id])}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
+      <p class="note">En flans entiers (1 flan = ${PARTS} parts), arrondi au flan du dessus. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
     </section>
   </div></div>`;
 }
@@ -643,12 +648,12 @@ function journeeView(){
   return `<div class="page">
   <div class="head"><div><h1>${esc(shopName(B))}</h1><p>Ma journée · ${esc(fmtDay(day))}${a.debut?' · '+hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):''}</p></div>${dayNav()}</div>
   ${aff.length>1?`<p class="note">Tu as plusieurs affectations ce jour : l’appli affiche la première (${esc(shopName(B))}).</p>`:''}
-  ${enRoute.length?`<section class="card" style="border-color:var(--gold)"><h2>Livraison en route</h2>${enRoute.map(e=>`<div class="envoi"><div class="envoi-h"><b>${e.type==='reassort'?'Réassort':'Livraison du matin'}</b><span class="meta">${lineTotal(e.envoi_lignes)} flans · ${esc(displayName(prof(e.livreur_id)))}</span></div>${chipsOf(e.envoi_lignes)}<button class="btn" type="button" data-act="recu" data-id="${e.id}">J’ai bien reçu</button></div>`).join('')}</section>`:''}
+  ${enRoute.length?`<section class="card" style="border-color:var(--gold)"><h2>Livraison en route</h2>${enRoute.map(e=>`<div class="envoi"><div class="envoi-h"><b>${e.type==='reassort'?'Réassort':'Livraison du matin'}</b><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))} · ${esc(displayName(prof(e.livreur_id)))}</span></div>${chipsOf(e.envoi_lignes)}<button class="btn" type="button" data-act="recu" data-id="${e.id}">J’ai bien reçu</button></div>`).join('')}</section>`:''}
   ${urgent.length?`<section class="card" style="border-color:var(--bad)"><h2>À vendre en premier</h2><div class="chips">${urgent.map(r=>`${r.premier?`<span class="chip">${sw(r.p)}${esc(r.p.nom)} <b>${r.premier} parts</b> · dernier jour</span>`:''}${r.perime?`<span class="chip" style="border-color:var(--bad)">${sw(r.p)}${esc(r.p.nom)} <b>${r.perime} parts</b> · périmées, à jeter</span>`:''}`).join('')}</div><p class="note">Sers toujours les parts les plus anciennes d’abord. Un flan se vend ${DUREE} jours à partir de sa production.</p></section>`:''}
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>Signaler un réassort</h2>
       ${isToday?`<form id="reassortForm" class="grid" style="gap:12px" novalidate data-boutique="${B}">
-        <p class="sub">Indique ce qu’il te manque, en flans entiers (4 parts). Un responsable valide, puis le labo prépare et le livreur t’apporte.</p>
+        <p class="sub">Indique ce qu’il te manque, en parts. Un responsable valide, puis le labo prépare et le livreur t’apporte.</p>
         ${qtyGrid('ra',{},dispo())}
         <label class="check"><input type="checkbox" id="raUrgent">C’est urgent (rupture en cours)</label>
         <label class="field">Message<input id="raNote" placeholder="Ex. : plus de vanille, gros rush"></label>
@@ -680,9 +685,9 @@ function tourneeView(){
   const mine=envois.filter(e=>e.livreur_id===me.id);
   const order={pret:0,valide:1,en_route:2,livre:3};
   return `<div class="page">
-  <div class="head"><div><h1>Ma tournée</h1><p>${mine.length} envoi${mine.length>1?'s':''} · ${mine.reduce((a,e)=>a+lineTotal(e.envoi_lignes),0)} flans</p></div>${dayNav()}</div>
+  <div class="head"><div><h1>Ma tournée</h1><p>${mine.length} envoi${mine.length>1?'s':''} · ${mine.reduce((a,e)=>a+lineTotal(e.envoi_lignes)*PU(e),0)} parts</p></div>${dayNav()}</div>
   ${mine.length?mine.slice().sort((a,b)=>(order[a.statut]??9)-(order[b.statut]??9)).map(e=>{const b=boutiques.find(x=>x.id===e.boutique_id)||{};return `<div class="envoi${e.type==='reassort'&&e.statut==='pret'?' hot':''}">
-    <div class="envoi-h"><span><b>${esc(b.nom||'?')}</b> <span class="badge ${e.type==='reassort'?'b-bad':'b-mute'}">${e.type==='reassort'?'Réassort':'Livraison du matin'}</span></span><span class="meta">${lineTotal(e.envoi_lignes)} flans</span></div>
+    <div class="envoi-h"><span><b>${esc(b.nom||'?')}</b> <span class="badge ${e.type==='reassort'?'b-bad':'b-mute'}">${e.type==='reassort'?'Réassort':'Livraison du matin'}</span></span><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))}</span></div>
     <span class="meta">${esc([b.adresse,b.ville].filter(Boolean).join(' · ')||'Adresse à compléter')}${b.horaires?' · '+esc(b.horaires):''}</span>
     ${chipsOf(e.envoi_lignes)}${stepsOf(e)}
     ${e.statut==='pret'?`<button class="btn" type="button" data-act="parti" data-id="${e.id}">Je pars avec cet envoi</button>`:e.statut==='valide'?'<span class="meta">En préparation au labo.</span>':e.statut==='en_route'?'<span class="meta">Le vendeur confirme la réception à ton arrivée.</span>':''}
@@ -779,7 +784,7 @@ function laboView(){
 }
 function laboLots(){
   const tmw=addDays(day,1);
-  const need={};envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>need[l.parfum_id]=(need[l.parfum_id]||0)+l.quantite));
+  const need={};envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>need[l.parfum_id]=(need[l.parfum_id]||0)+(l.quantite||0)*PU(e)));Object.keys(need).forEach(k=>need[k]=flansDe(need[k]));
   const todays=lots.filter(l=>l.jour===day);
   const made={};todays.forEach(l=>made[l.parfum_id]=(made[l.parfum_id]||0)+l.quantite);
   const todo=Object.keys(need).map(id=>[id,need[id]-(made[id]||0)]).filter(x=>x[1]>0).sort((a,b)=>((parfum(a[0])||{}).ordre||0)-((parfum(b[0])||{}).ordre||0));
@@ -1427,6 +1432,7 @@ function profileView(){
       <section class="card"><h2>Code PIN</h2>
         <p class="sub">${pinRec?`Code à ${pinRec.len} chiffres actif sur cet appareil. Il est demandé à l’ouverture et après 2 minutes en arrière-plan.`:'Avec un code PIN, tu ouvres l’appli sur ce téléphone sans retaper ton mot de passe.'}</p>
         <div class="btnrow">${pinRec?'<button class="btn ghost sm" type="button" data-act="pinChange">Changer le PIN</button><button class="btn ghost sm" type="button" data-act="pinOff">Désactiver</button><button class="btn ghost sm" type="button" data-act="lock">Verrouiller maintenant</button>':'<button class="btn sm" type="button" data-act="pinOn">Activer un code PIN</button>'}</div></section>
+      ${mailSection()}
       ${me.role==='client'?'':pinPointageSection()}
       ${me.role==='client'?`<section class="card"><h2>Supprimer mon compte</h2><p class="sub">Tes informations sont effacées. Tes commandes passées restent connues de la boutique avec ton nom, pour sa comptabilité.</p><button class="btn danger sm" type="button" data-act="delMoi">Supprimer mon compte</button></section>`:''}
       <section class="card"><h2>Session</h2><button class="btn ghost" type="button" data-act="logout">Se déconnecter</button>${me.role==='borne'?'<a class="btn ghost sm" href="#accueil">Retour à la borne</a>':''}</section>
@@ -1763,6 +1769,7 @@ function csvDownload(rows,name){const csv='﻿'+rows.map(r=>r.map(v=>{const s=St
 
 /* ================= Étape 7 : plaques, postes et stocks, fichiers, notifications ================= */
 let postes=[],stockArticles=[],notifs=[],fichiers=null,fichUrls={};
+const fmtPl=x=>(Math.round(x*10)/10).toLocaleString('fr-FR');
 const PP=()=>Math.max(1,+(((parametres.labo||{}).parts_plaque))||15);
 
 /* --- Plaques (1 plaque = PP() parts) --- */
@@ -1772,17 +1779,17 @@ function plaquesTable(lines,titre,sousTitre,editable){
   lines.forEach(l=>{if(!l.parts)return;(by[l.p]=by[l.p]||{})[l.b]=(by[l.p][l.b]||0)+l.parts;if(!shopIds.includes(l.b))shopIds.push(l.b)});
   const shops=boutiques.filter(b=>shopIds.includes(b.id));
   const ids=Object.keys(by).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
-  let totParts=0,totPl=0;const colTot={};
-  const rows=ids.map(id=>{const p=parfum(id)||{nom:'?'};const t=Object.values(by[id]).reduce((a,x)=>a+x,0);const pl=Math.ceil(t/pp);totParts+=t;totPl+=pl;
+  let totParts=0,totPl=0,totFl=0;const colTot={};
+  const rows=ids.map(id=>{const p=parfum(id)||{nom:'?'};const t=Object.values(by[id]).reduce((a,x)=>a+x,0);const pl=Math.ceil(t/pp);totParts+=t;totPl+=pl;totFl+=flansDe(t);
     shops.forEach(s=>colTot[s.id]=(colTot[s.id]||0)+(by[id][s.id]||0));
-    return `<tr><td>${sw(p)} ${esc(p.nom)}</td>${shops.map(s=>`<td class="num">${by[id][s.id]||'<span class="meta">·</span>'}</td>`).join('')}<td class="num"><b>${t}</b></td><td class="num pl"><b>${pl}</b></td><td class="num meta">${pl*pp-t||''}</td></tr>`}).join('');
+    return `<tr><td>${sw(p)} ${esc(p.nom)}</td>${shops.map(s=>{const v=by[id][s.id];return `<td class="num">${v?`<b>${fmtPl(v/pp)}</b> <small class="meta">${v} p.</small>`:'<span class="meta">·</span>'}</td>`}).join('')}<td class="num"><b>${t}</b></td><td class="num pl"><b>${pl}</b></td><td class="num meta">${pl*pp-t||''}</td><td class="num"><b>${flansDe(t)}</b></td></tr>`}).join('');
   return `<section class="card plaques"><div class="envoi-h"><div><h2 style="margin:0">${esc(titre)}</h2><span class="meta">${esc(sousTitre)}</span></div><div class="btnrow noprint">${editable?`<label class="meta">1 plaque = <input type="number" min="1" max="60" data-act="ppSet" value="${pp}" style="width:58px;min-height:34px;border:1px solid var(--line2);border-radius:8px;text-align:center;font:inherit" aria-label="Parts par plaque"> parts</label>`:`<span class="meta">1 plaque = ${pp} parts</span>`}<button class="btn ghost sm" type="button" data-act="print">Imprimer</button></div></div>
-    ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:${360+shops.length*90}px"><thead><tr><th>Parfum</th>${shops.map(s=>`<th class="num">${esc(s.nom)}</th>`).join('')}<th class="num">Total parts</th><th class="num">Plaques</th><th class="num" title="Parts en plus une fois les plaques coupées">En plus</th></tr></thead><tbody>${rows}
-    <tr class="total"><td>Total</td>${shops.map(s=>`<td class="num">${colTot[s.id]||0}</td>`).join('')}<td class="num">${totParts}</td><td class="num pl">${totPl}</td><td></td></tr></tbody></table></div>
-    <p class="note">Plaques = total des parts ÷ ${pp}, arrondi à la plaque du dessus. « En plus » : parts qui restent une fois les plaques coupées.</p>`:'<p class="empty">Aucune quantité pour l’instant.</p>'}</section>`;
+    ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:${360+shops.length*90}px"><thead><tr><th>Parfum</th>${shops.map(s=>`<th class="num">${esc(s.nom)}</th>`).join('')}<th class="num">Total parts</th><th class="num">Plaques</th><th class="num" title="Parts en trop une fois les plaques remplies">En plus</th><th class="num">Flans à produire</th></tr></thead><tbody>${rows}
+    <tr class="total"><td>Total</td>${shops.map(s=>`<td class="num">${fmtPl((colTot[s.id]||0)/pp)} <small class="meta">${colTot[s.id]||0} p.</small></td>`).join('')}<td class="num">${totParts}</td><td class="num pl">${totPl}</td><td></td><td class="num">${totFl}</td></tr></tbody></table></div>
+    <p class="note">Dans chaque boutique : nombre de plaques (et de parts). Colonne Plaques = plaques à produire pour le parfum, arrondi à la plaque du dessus ; « En plus » : parts en trop une fois les plaques remplies. Flans à produire = total des parts ÷ ${PARTS}, arrondi au flan du dessus.</p>`:'<p class="empty">Aucune quantité pour l’instant.</p>'}</section>`;
 }
 function plaquesFromEnvois(jour){
-  const out=[];envoisAll.filter(e=>e.jour===jour&&e.type==='matin'&&!['signale','refuse'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>out.push({b:e.boutique_id,p:l.parfum_id,parts:(l.quantite||0)*PARTS})));return out;
+  const out=[];envoisAll.filter(e=>e.jour===jour&&e.type==='matin'&&!['signale','refuse'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>out.push({b:e.boutique_id,p:l.parfum_id,parts:(l.quantite||0)*PU(e)})));return out;
 }
 
 /* --- Postes et stocks du labo --- */
@@ -1857,6 +1864,24 @@ async function envoyerFichiers(f,btn){
     catch(e){prog.textContent='';return fail((/bucket|not found/i.test(e.message||'')?'Base pas à jour : lance etape7.sql dans Supabase.':frErr(e))+(ok?' ('+ok+' fichier(s) déjà envoyé(s))':''))}
   }
   prog.textContent='';toast(ok+' fichier'+(ok>1?'s':'')+' envoyé'+(ok>1?'s':''));ui.fDossier=dossier;if(btn)btn.disabled=false;loadFichiers();
+}
+
+/* --- Mails (Resend) --- */
+let mailLog=null;
+function mailSection(){
+  if(me.role==='borne')return '';
+  const on=me.notif_mail!==false,M=parametres.mails;
+  const perso=`<section class="card"><h2>Notifications par mail</h2><p class="sub">${me.role==='client'?'Un mail quand ta commande est confirmée et quand elle est prête.':'Les notifications importantes (réassorts, commandes, températures, stocks bas, demandes…) arrivent aussi sur '+esc(me.email)+'.'}</p>
+    <label class="check" style="font-size:14px"><input type="checkbox" data-act="mailMoi"${on?' checked':''}><span>Recevoir aussi par mail</span></label></section>`;
+  if(!isResp(me)||!M)return perso;
+  return perso+`<section class="card"><h2>Réglages des mails <span class="badge ${M.actif!==false?'b-good':'b-mute'}">${M.actif!==false?'Activés':'Coupés'}</span></h2>
+    <form id="mailForm" class="grid" style="gap:10px" novalidate>
+      <label class="field">Expéditeur<input id="mlFrom" value="${esc(M.expediteur||'')}" placeholder="Le Comptoir du Flan <notifications@votre-domaine.fr>"><small>Tant que ton domaine n’est pas vérifié dans Resend, garde onboarding@resend.dev : les mails ne partent alors que vers l’adresse du compte Resend.</small></label>
+      <label class="field">Adresse de l’appli (bouton des mails)<input id="mlUrl" type="url" value="${esc(M.url||APP_URL)}"></label>
+      <label class="check" style="font-size:14px"><input type="checkbox" id="mlOn"${M.actif!==false?' checked':''}><span>Envoyer les mails</span></label>
+      <p class="msg err" id="mlErr" hidden></p>
+      <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="mailTest">M’envoyer un mail de test</button><button class="btn ghost sm" type="button" data-act="mailLog">Derniers envois</button></div></form>
+    ${mailLog?`<div class="grid" style="gap:6px">${mailLog.length?mailLog.map(r=>`<div style="font-size:13px;border-top:1px solid var(--cream);padding-top:6px"><span class="badge ${r.status_code>=200&&r.status_code<300?'b-good':'b-bad'}">${r.status_code||'erreur'}</span> <span class="meta">${esc(whenTxt(r.created))}</span><div class="meta" style="overflow-wrap:anywhere">${esc(r.reponse)}</div></div>`).join(''):'<p class="empty">Aucun envoi récent.</p>'}<p class="note">200 = mail accepté par Resend. 403 = expéditeur non autorisé (domaine pas vérifié) ou destinataire refusé.</p></div>`:''}</section>`;
 }
 
 /* --- Notifications --- */
@@ -2022,6 +2047,8 @@ document.addEventListener('click',async ev=>{
     case 'notifOpen':{const n=notifs.find(x=>String(x.id)===id);if(!n)return;if(!n.lu){n.lu=true;sb.from('notifications').update({lu:true}).eq('id',n.id).then(()=>{},()=>{})}paintBell();if(n.lien&&n.lien!==location.hash)location.hash=n.lien;else render();return}
     case 'notifToutLu':{notifs.forEach(n=>n.lu=true);paintBell();render();const {error}=await sb.from('notifications').update({lu:true}).eq('user_id',me.id).eq('lu',false);if(error)toast(frErr(error));return}
     case 'notifPerm':{try{const r=await Notification.requestPermission();toast(r==='granted'?'Notifications activées':'Notifications refusées')}catch(e){}return render()}
+    case 'mailTest':{t.disabled=true;try{const {data,error}=await sb.rpc('mail_test');if(error)throw error;toast('Mail envoyé à '+data+' (regarde aussi les spams)')}catch(e){toast(/mail_test/.test(e.message||'')?'Base pas à jour : lance etape7b.sql dans Supabase.':frErr(e))}t.disabled=false;return}
+    case 'mailLog':{try{const {data,error}=await sb.rpc('mail_journal');if(error)throw error;mailLog=data||[]}catch(e){mailLog=[];toast(frErr(e))}return render()}
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
     case 'pinOff':return startPinFlow('disable');
@@ -2034,7 +2061,7 @@ document.addEventListener('change',ev=>{
     if(k==='inc'){rep.inc[b]=r.checked;return render()}
     if(k==='liv'){rep.liv[b]=r.value;return}
     if(k==='adj'){rep.adj[b]=parseInt(r.value,10)||0;rep.adjTouched[b]=true;const q=rep.qty[b];if(q)Object.keys(q).forEach(p=>{if(q[p+'_auto'])delete q[p]});return render()}
-    if(k==='qty'){rep.qty[b]=rep.qty[b]||{};rep.qty[b][r.dataset.p]=int(r.value);return render()}
+    if(k==='qty'){rep.qty[b]=rep.qty[b]||{};rep.qty[b][r.dataset.p]=int(r.value);return setTimeout(render,0)}
   }
   const x=ev.target.closest('[data-act="ingUp"],[data-act="recQte"],[data-act="reglage"]');
   if(x){const a=x.dataset.act;
@@ -2044,6 +2071,7 @@ document.addEventListener('change',ev=>{
   }
   const ss=ev.target.closest('[data-act="stSet"]');if(ss){const v=parseFloat(String(ss.value).replace(',','.'));if(!(v>=0))return toast('Quantité invalide');act(()=>sb.from('stock_articles').update({quantite:v}).eq('id',ss.dataset.id),'Quantité enregistrée');return}
   const pps=ev.target.closest('[data-act="ppSet"]');if(pps){const v=int(pps.value);if(!v)return;act(()=>sb.from('parametres').upsert({cle:'labo',valeur:Object.assign({},parametres.labo||{},{parts_plaque:v})}),'Plaque = '+v+' parts');return}
+  const mm=ev.target.closest('[data-act="mailMoi"]');if(mm){act(()=>sb.from('profiles').update({notif_mail:mm.checked}).eq('id',me.id),mm.checked?'Mails activés':'Mails coupés');return}
   if(ev.target.name==='dType'){demTypeUpdate(ev.target.closest('form'));return}
   const pst=ev.target.closest('[data-act="pubStat"]');if(pst){const row={};row[pst.dataset.k]=pst.value===''?null:int(pst.value);act(()=>sb.from('publications').update(row).eq('id',pst.dataset.id),'Résultat enregistré');return}
   const pl=ev.target.closest('[data-act="pubLien"]');if(pl){const v=pl.value.trim();if(v&&!/^https?:\/\//i.test(v))return toast('Le lien doit commencer par https://');act(()=>sb.from('publications').update({lien:v||null}).eq('id',pl.dataset.id),'Lien enregistré');return}
@@ -2103,7 +2131,7 @@ document.addEventListener('submit',async ev=>{
   }
   if(f.id==='envoiForm'){
     const lines=readGrid('ne',dispo());if(!lines.length)return fail('#neErr','Indique au moins une quantité.');
-    const {data,error}=await sb.from('envois').insert({jour:day,boutique_id:$('#neShop').value,type:$('#neType').value,statut:'valide',livreur_id:$('#neLiv').value||null,note:$('#neNote').value.trim()||null}).select('id').single();
+    const {data,error}=await sb.from('envois').insert({jour:day,boutique_id:$('#neShop').value,type:$('#neType').value,statut:'valide',parts_unite:$('#neType').value==='matin'?PP():1,livreur_id:$('#neLiv').value||null,note:$('#neNote').value.trim()||null}).select('id').single();
     if(error)return fail('#neErr',frErr(error));
     const r=await sb.from('envoi_lignes').insert(lines.map(l=>({envoi_id:data.id,parfum_id:l.parfum_id,quantite:l.q})));
     if(r.error)return fail('#neErr',frErr(r.error));
@@ -2111,7 +2139,7 @@ document.addEventListener('submit',async ev=>{
   }
   if(f.id==='reassortForm'){
     const lines=readGrid('ra',dispo());if(!lines.length)return fail('#raErr','Indique au moins un parfum et une quantité.');
-    const {data,error}=await sb.from('envois').insert({jour:day,boutique_id:f.dataset.boutique,type:'reassort',statut:'signale',urgent:$('#raUrgent').checked,note:$('#raNote').value.trim()||null}).select('id').single();
+    const {data,error}=await sb.from('envois').insert({jour:day,boutique_id:f.dataset.boutique,type:'reassort',statut:'signale',parts_unite:1,urgent:$('#raUrgent').checked,note:$('#raNote').value.trim()||null}).select('id').single();
     if(error)return fail('#raErr',frErr(error));
     const r=await sb.from('envoi_lignes').insert(lines.map(l=>({envoi_id:data.id,parfum_id:l.parfum_id,quantite:l.q,demande:l.q})));
     if(r.error)return fail('#raErr',frErr(r.error));
@@ -2211,6 +2239,13 @@ document.addEventListener('submit',async ev=>{
     rep.target=null;toast('Ajouté au calendrier');reload();return;
   }
   if(f.id==='upForm')return envoyerFichiers(f,btn);
+  if(f.id==='mailForm'){
+    const from=$('#mlFrom').value.trim(),url=$('#mlUrl').value.trim();
+    if(!/<[^<>\s]+@[^<>\s]+\.[^<>\s]+>$|^[^<>\s]+@[^<>\s]+\.[^<>\s]+$/.test(from))return fail('#mlErr','Expéditeur : « Nom <adresse@domaine.fr> » ou une adresse seule.');
+    if(!/^https:\/\//.test(url))return fail('#mlErr','L’adresse de l’appli doit commencer par https://');
+    const {error}=await sb.from('parametres').upsert({cle:'mails',valeur:Object.assign({},parametres.mails||{},{expediteur:from,url,actif:$('#mlOn').checked})});
+    if(error)return fail('#mlErr',frErr(error));toast('Réglages enregistrés');reload();if(btn)btn.disabled=false;return;
+  }
   if(f.dataset.posteform){
     const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');if(!d.nom.trim())return fail(err,'Donne un nom au poste.');
     const row={nom:d.nom.trim(),type:d.type,note:d.note.trim()||null};const isNew=f.dataset.posteform==='new';
@@ -2293,8 +2328,8 @@ async function repSend(btn){
     for(const w of work){
       if(!w.lines.length){if(w.ex){const r=await sb.from('envois').delete().eq('id',w.ex.id);if(r.error)throw r.error}continue}
       let id=w.ex&&w.ex.id;
-      if(id){let r=await sb.from('envois').update({livreur_id:w.liv}).eq('id',id);if(r.error)throw r.error;r=await sb.from('envoi_lignes').delete().eq('envoi_id',id);if(r.error)throw r.error}
-      else{const r=await sb.from('envois').insert({jour:target,boutique_id:w.b.id,type:'matin',statut:'valide',livreur_id:w.liv}).select('id').single();if(r.error)throw r.error;id=r.data.id}
+      if(id){let r=await sb.from('envois').update({livreur_id:w.liv,parts_unite:PP()}).eq('id',id);if(r.error)throw r.error;r=await sb.from('envoi_lignes').delete().eq('envoi_id',id);if(r.error)throw r.error}
+      else{const r=await sb.from('envois').insert({jour:target,boutique_id:w.b.id,type:'matin',statut:'valide',livreur_id:w.liv,parts_unite:PP()}).select('id').single();if(r.error)throw r.error;id=r.data.id}
       const r=await sb.from('envoi_lignes').insert(w.lines.map(l=>({envoi_id:id,parfum_id:l.parfum_id,quantite:l.quantite})));if(r.error)throw r.error;n++;
     }
     toast(n+' livraison'+(n>1?'s':'')+' envoyée'+(n>1?'s':'')+' au labo');sb.rpc('annoncer_repartition',{p_jour:target}).then(()=>{},()=>{});rep.target=null;reload();
