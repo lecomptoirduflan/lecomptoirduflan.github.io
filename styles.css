@@ -220,3 +220,29 @@ td img.sw.ph{margin-right:6px}
 .parfum .bandeau{height:auto;aspect-ratio:4/3}
 .envoi .badge{white-space:normal;max-width:100%}
 .steps span{white-space:normal}
+
+/* ---------- Étape 4 ---------- */
+.borne-mode .top,.borne-mode::before{display:none}
+.borne{min-height:100vh;background:#0B0B0B;color:#fff;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.b-left{padding:40px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;border-right:1px solid #2A2A2A}
+.b-right{padding:40px;display:flex;align-items:center;justify-content:center}
+.b-pad{display:grid;grid-template-columns:repeat(3,96px);gap:14px}
+.b-pad button{width:96px;height:80px;border-radius:16px;border:1px solid #333;background:#161616;color:#fff;font:inherit;font-size:30px;cursor:pointer}
+.b-pad button.ok{background:var(--gold-l);color:#0B0B0B;border:none;font-size:22px;font-weight:700}
+.b-pad button:active{background:#262626}
+.b-act{min-height:72px;border-radius:14px;font:inherit;font-size:20px;cursor:pointer;border:1px solid #444;background:#161616;color:#fff}
+.b-act.main{border:none;background:var(--gold-l);color:#0B0B0B;font-weight:700}
+@media (max-width:760px){.borne{grid-template-columns:1fr}.b-left{border-right:0;border-bottom:1px solid #2A2A2A;padding:24px}.b-right{padding:24px}.b-pad{grid-template-columns:repeat(3,minmax(0,84px))}.b-pad button{width:84px;height:68px}}
+.hcell{appearance:none;width:100%;min-height:52px;border:1px solid var(--line);background:#fff;border-radius:10px;font:inherit;font-size:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink)}
+.hcell small{color:var(--muted);font-size:11.5px}
+.hcell.bad{border-color:var(--bad);background:var(--bad-bg)}
+.hcell.warn{border-color:var(--gold);background:var(--gold-bg)}
+.hcell:hover{border-color:var(--ink)}
+.agrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;min-width:640px}
+.agh{padding:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.agday{min-height:96px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.agday.today{border:2px solid var(--gold)}
+.agn{font-size:13px;font-weight:700}
+.agday.today .agn{align-self:flex-start;padding:1px 7px;border-radius:999px;background:var(--ink);color:var(--gold-l)}
+.kpi{display:flex;flex-direction:column;gap:4px}
+.hcell.ok{border-color:var(--good);background:var(--good-bg)}

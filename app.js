@@ -32,6 +32,7 @@ const ROLES={
   vendeur:{label:'Vendeur',short:'Vendeur'},
   livreur:{label:'Livreur',short:'Livreur'},
   cm:{label:'Community manager',short:'Community manager'},
+  borne:{label:'Borne de pointage (tablette)',short:'Borne'},
   aucun:{label:'En attente',short:'En attente'}
 };
 const ROLE_KEYS=Object.keys(ROLES).filter(k=>k!=='aucun');
@@ -51,15 +52,16 @@ const CAN={
   repartition:()=>isResp(me)||me.role==='chef_patissier',
   boutiques:()=>isResp(me)||me.role==='vendeur'||me.role==='livreur',
   journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur',
-  labo:()=>isResp(me)||isLabo(me), marges:()=>isResp(me), compta:()=>me.role==='direction'
+  labo:()=>isResp(me)||isLabo(me), marges:()=>isResp(me), compta:()=>me.role==='direction',
+  pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne'
 };
 function navItems(){
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['equipe','Équipe'],['boutiques','Points de vente']]);
-  if(me.role==='chef_patissier')return [['accueil','Accueil'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning']];
-  if(isLabo(me))return [['accueil','Accueil'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning']];
-  if(me.role==='vendeur')return [['accueil','Accueil'],['journee','Ma journée'],['planning','Mon planning'],['boutiques','Points de vente']];
-  if(me.role==='livreur')return [['accueil','Accueil'],['tournee','Ma tournée'],['planning','Mon planning'],['boutiques','Points de vente']];
-  return [['accueil','Accueil'],['planning','Mon planning']];
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['equipe','Équipe'],['boutiques','Points de vente']]);
+  if(me.role==='chef_patissier')return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning'],['agenda','Agenda']];
+  if(isLabo(me))return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning'],['agenda','Agenda']];
+  if(me.role==='vendeur')return [['accueil','Accueil'],['pointage','Mes heures'],['journee','Ma journée'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
+  if(me.role==='livreur')return [['accueil','Accueil'],['pointage','Mes heures'],['tournee','Ma tournée'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
+  return [['accueil','Accueil'],['pointage','Mes heures'],['planning','Mon planning'],['agenda','Agenda']];
 }
 
 /* ---------- Modules de l'accueil ---------- */
@@ -67,11 +69,12 @@ const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes spéciales','Événements, entreprises, acomptes',null,5)]},
   {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
-  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements',null,4)]},
-  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie',null,4)]},
+  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda')]},
+  {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies')]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros',null,6),T('Réseau de franchises','Chiffres consolidés',null,6),T('Réseaux sociaux','Suivi du community manager',null,6)]}
 ];
 const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
+const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
 const ROLE_TILES={
   chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
   vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits click & collect',null,5)],
@@ -88,6 +91,7 @@ const STEP_LBL={valide:'Validé',pret:'Prêt',en_route:'En route',livre:'Livré'
 let sb=null,user=null,me=null,loaded=false,channel=null;
 let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[],envoisAll=[],cloturesAll=[],calendrier=[];
 let rep={target:null,adj:{},adjTouched:{},qty:{},inc:{},liv:{}},meteo={};
+let mesPointages=[],monPlanning=[];
 let lots=[],equipements=[],releves=[],receptions=[],ingredients=[],recettes=[],reglages={},compta=null;
 let route='accueil',day=todayISO(),authMode='login',justLoggedIn=false,recovering=false;
 let ui={editShop:null,addShop:false,lastInvite:null,newEnvoi:false,editParfum:null,addParfum:false};
@@ -132,7 +136,8 @@ const counts=()=>({
   signale:envois.filter(e=>e.statut==='signale').length,
   labo:envoisAll.filter(e=>e.statut==='valide'&&(e.jour===todayISO()||e.jour===addDays(todayISO(),1))).length,
   tournee:envois.filter(e=>e.livreur_id===me.id&&e.statut==='pret').length,
-  reception:envois.filter(e=>e.statut==='en_route').length
+  reception:envois.filter(e=>e.statut==='en_route').length,
+  anomalies:0
 });
 function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)}
 const pertesOf=l=>(l.quarts_jetes||0)+(l.quarts_casses||0)+(l.quarts_donnes||0);
@@ -242,6 +247,8 @@ async function loadAll(){
   if(pf.error)toast('Base pas à jour : lance etape2.sql dans Supabase.');
   else if(cal.error)toast('Base pas à jour : lance etape2b.sql dans Supabase.');
   if(isResp(me)){const i=await sb.from('invitations').select('*').order('created_at',{ascending:false});invitations=i.data||[]}else invitations=[];
+  if(me&&me.role!=='borne'){const ws=weekStart(todayISO());const [mp,mpl]=await Promise.all([sb.from('pointages').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6)),sb.from('planning').select('*').eq('user_id',user.id).gte('jour',ws).lte('jour',addDays(ws,6))]);mesPointages=mp.data||[];monPlanning=mpl.data||[];if(pinPointage===null)sb.rpc('pin_pointage_defini').then(r=>{pinPointage=!!(r&&r.data);if(route==='pointage')render()},()=>{});}
+  if(heuresData&&route==='heures'&&!heuresData.loading)loadHeures(heuresData.ws);
   if(isResp(me)||isLabo(me)){
     const [lo,eq,re,rc]=await Promise.all([
       sb.from('lots').select('*').gte('jour',addDays(d0,-14)).lte('jour',addDays(d0,1)).order('created_at'),
@@ -263,7 +270,7 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -277,22 +284,25 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;render();window.scrollTo({top:0})});
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;render();window.scrollTo({top:0})});
 
 function render(){
   if(!user||!loaded)return;
   const main=$('#main'),nav=$('#nav');
   if(!me||!me.actif||me.role==='aucun'){nav.innerHTML='';$('#me').innerHTML='';main.innerHTML=waitView();return}
+  document.body.classList.toggle('borne-mode',me.role==='borne'&&route!=='profil');
+  if(me.role==='borne'&&route!=='profil'&&borne.step==='sign'&&document.getElementById('bSig'))return;
+  if(me.role==='borne'){nav.innerHTML='';$('#me').innerHTML=`<span class="avatar">B</span><span>Borne</span>`;main.innerHTML=route==='profil'?profileView():borneView();if(borne.step==='sign')setTimeout(sigInit,0);return}
   if(!CAN[route]())route='accueil';
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
+  const V={pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
   main.innerHTML=V[route]();
 }
 
@@ -322,7 +332,7 @@ function homeView(){
   }else{
     const aff=myToday();
     const banner=aff.length?`<div class="banner"><span class="k">Aujourd’hui</span>${aff.map(a=>`<span class="v">${esc(lieuLabel(a))}</span><span class="s">${a.debut?hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):'Horaires à préciser'}${a.note?' · '+esc(a.note):''}</span>`).join('')}</div>`:`<div class="card"><span class="sub">Pas d’affectation prévue aujourd’hui.</span></div>`;
-    const tiles=(ROLE_TILES[me.role]||[]).concat([T('Mon profil','Prénom, code PIN','#profil')]);
+    const tiles=[PT_TILE].concat(ROLE_TILES[me.role]||[]).concat([T('Agenda','Dates importantes','#agenda'),T('Mon profil','Prénom, codes PIN','#profil')]);
     body=banner+`<section class="pole"><div class="pole-h"><h2>Mon espace</h2><span>${esc(roleLabel(me.role))}</span></div><div class="tiles">${tiles.map(t=>tileHTML(t,false,c)).join('')}</div></section>`;
   }
   return `<div class="page"><div class="head"><div><h1>${hello}</h1><p>${esc(roleLabel(me.role))} · ${esc(fmtDay(todayISO()))}</p></div></div>${body}<p class="note">Les modules marqués « Étape » arrivent au fil des mises à jour.</p></div>`;
@@ -330,7 +340,7 @@ function homeView(){
 
 /* --- Tableau de bord --- */
 function dashView(){
-  const act=profiles.filter(p=>p.actif&&p.role!=='aucun');
+  const act=profiles.filter(p=>p.actif&&!['aucun','borne'].includes(p.role));
   const waiting=profiles.filter(p=>p.role==='aucun'&&p.actif);
   const pend=invitations.filter(i=>!i.used_at);
   const shopsOn=boutiques.filter(b=>b.actif);
@@ -378,7 +388,7 @@ function planningView(){
     <p class="note">Le planning est fait par les responsables. Une question : parle à ton responsable.</p></div>`;
   }
   const today=planning.filter(p=>p.jour===day);
-  const actives=profiles.filter(p=>p.actif&&p.role!=='aucun');
+  const actives=profiles.filter(p=>p.actif&&!['aucun','borne'].includes(p.role));
   const busy=new Set(today.map(p=>p.user_id));
   const week=Array.from({length:7},(_,i)=>addDays(day,i));
   const lieuOpts=`<option value="labo">Labo</option><option value="tournee">Tournée de livraison</option><option value="bureau">Bureau</option>`+boutiques.filter(b=>b.actif).map(b=>`<option value="b:${b.id}">Boutique · ${esc(b.nom)}</option>`).join('');
@@ -898,6 +908,267 @@ function comptaView(){
   </section></div>`;
 }
 
+/* ================= ÉTAPE 4 : pointage, borne, heures, agenda ================= */
+const PT_LBL={arrivee:'Arrivée',pause_debut:'Début de pause',pause_fin:'Fin de pause',depart:'Départ'};
+const PT_BTN={arrivee:'Je commence',pause_debut:'Je pars en pause',pause_fin:'Je reprends',depart:'Je termine'};
+const hm=min=>{min=Math.round(min||0);const s=min<0?'−':'';min=Math.abs(min);return s+Math.floor(min/60)+'h'+pad(min%60)};
+const weekStart=d=>{const x=parseISO(d);const k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);return isoOf(x)};
+const minOf=t=>{if(!t)return null;const [h,m]=String(t).split(':').map(Number);return h*60+(m||0)};
+function plannedMin(rows){return rows.reduce((a,p)=>{const d=minOf(p.debut),f=minOf(p.fin);return a+(d!=null&&f!=null&&f>d?f-d:0)},0)}
+function workOf(list,isPast){
+  const L=list.slice().sort((a,b)=>a.at<b.at?-1:1);let min=0,start=null,state='out';const an=[];
+  for(const p of L){const t=new Date(p.at);
+    if(p.type==='arrivee'){if(state==='in')an.push('Deux arrivées de suite');start=t;state='in'}
+    else if(p.type==='pause_debut'){if(state==='in'){min+=(t-start)/6e4;state='pause'}else an.push('Pause sans arrivée')}
+    else if(p.type==='pause_fin'){if(state==='pause'){start=t;state='in'}else an.push('Fin de pause sans début')}
+    else if(p.type==='depart'){if(state==='in')min+=(t-start)/6e4;else if(state!=='pause')an.push('Départ sans arrivée');state='done'}}
+  let live=0;if(state==='in'&&!isPast)live=(Date.now()-start)/6e4;
+  if(isPast&&state==='in')an.push('Oubli de départ');
+  if(isPast&&state==='pause')an.push('Pause jamais terminée');
+  return {min,live,state,an,first:L.find(p=>p.type==='arrivee')};
+}
+const nextActions=state=>state==='in'?['pause_debut','depart']:state==='pause'?['pause_fin']:['arrivee'];
+
+/* --- Mes heures (lecture seule : le pointage se fait sur la borne) --- */
+function pointageView(){
+  const t=todayISO(),ws=weekStart(t);
+  const mineToday=mesPointages.filter(p=>p.jour===t);
+  const w=workOf(mineToday,false);
+  const aff=monPlanning.filter(p=>p.jour===t);
+  const days=Array.from({length:7},(_,i)=>{const d=addDays(ws,i);const x=workOf(mesPointages.filter(p=>p.jour===d),d<t);return {d,pm:plannedMin(monPlanning.filter(p=>p.jour===d)),wm:x.min+x.live,an:x.an,n:mesPointages.filter(p=>p.jour===d).length}});
+  const wkP=days.reduce((a,x)=>a+x.pm,0),wkW=days.reduce((a,x)=>a+x.wm,0);
+  return `<div class="page">
+  <div class="head"><div><h1>Mes heures</h1><p>Le pointage se fait sur la <b>borne</b> du labo ou de la boutique, avec ton code personnel.</p></div></div>
+  <div class="grid g2" style="align-items:start">
+    <section class="card" style="gap:14px">
+      <div class="banner"><span class="k">${w.state==='in'?'En service':w.state==='pause'?'En pause':w.state==='done'?'Journée terminée':'Pas encore pointé aujourd’hui'}</span><span class="v">${hm(w.min+w.live)} aujourd’hui</span><span class="s">${aff.length?aff.map(a=>esc(lieuLabel(a))+(a.debut?' · '+hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):'')).join(' / '):'Pas d’affectation prévue aujourd’hui'}</span></div>
+      ${mineToday.length?mineToday.slice().sort((a,b)=>a.at<b.at?-1:1).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--cream)"><span>${PT_LBL[p.type]}</span><b class="num">${timeOf(p.at)}${p.source==='correction'?' <span class="badge b-gold">corrigé</span>':''}</b></div>`).join(''):'<p class="empty">Aucun pointage aujourd’hui.</p>'}
+      ${pinPointage===false?'<a class="btn ghost sm" href="#profil">Créer mon code de pointage</a>':''}
+      <p class="note">Un oubli ou une erreur ? Préviens un responsable : il corrige dans « Heures ».</p>
+    </section>
+    <section class="card"><h2>Ma semaine</h2>
+      <div class="grid g2" style="gap:8px"><div class="kpi"><span class="lbl">Pointé</span><span class="val num" style="font-size:30px">${hm(wkW)}</span></div><div class="kpi"><span class="lbl">Prévu au planning</span><span class="val num" style="font-size:30px">${hm(wkP)}</span></div></div>
+      ${days.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--cream);${x.d===t?'font-weight:700':''}"><span style="text-transform:capitalize">${esc(fmtDay(x.d))}</span><span class="num">${x.n?hm(x.wm):'–'}${x.pm?` <small style="color:var(--muted)">/ ${hm(x.pm)}</small>`:''}${x.an.length?' <span class="badge b-bad">'+esc(x.an[0])+'</span>':''}</span></div>`).join('')}
+    </section>
+  </div></div>`;
+}
+
+/* --- Borne de pointage (tablette partagée, code PIN personnel) --- */
+let borne={pin:'',step:'pin',info:null,msg:'',err:'',busy:false},borneT=null,borneClock=null;
+function borneReset(){borne={pin:'',step:'pin',info:null,msg:'',err:'',busy:false};clearTimeout(borneT);if(route&&me&&me.role==='borne')render()}
+function borneView(){
+  const now=new Date(),clock=pad(now.getHours())+':'+pad(now.getMinutes());
+  if(!borneClock)borneClock=setInterval(()=>{const c=document.getElementById('bClock');if(c){const n=new Date();c.textContent=pad(n.getHours())+':'+pad(n.getMinutes())}},15000);
+  const I=borne.info;
+  const left=`<section class="b-left"><div style="display:flex;align-items:center;gap:14px"><img src="icons/logo.png" alt="" style="width:64px;height:64px;background:#fff;border-radius:12px;object-fit:contain"><span style="display:flex;flex-direction:column"><span style="font-family:var(--f-title);font-size:22px">Borne de pointage</span><span style="color:#BDB6A8;font-size:14px">${esc(me.boutique_id&&boutiques.find(b=>b.id===me.boutique_id)?shopName(me.boutique_id):'Labo')} · <a href="#profil" style="color:#BDB6A8">réglages</a></span></span></div>
+    <div><div id="bClock" style="font-family:var(--f-title);font-size:96px;font-weight:300;line-height:1;color:var(--gold-l)">${clock}</div><div style="font-size:20px;color:#D9D3C7;text-transform:capitalize">${esc(fmtDay(todayISO()))}</div></div>
+    ${borne.step==='done'?`<div role="status" style="border:1px solid var(--gold-l);padding:18px;border-radius:14px;display:flex;flex-direction:column;gap:6px"><span style="color:#BDB6A8;font-size:14px">Pointage enregistré</span><span style="font-family:var(--f-title);font-size:26px">${esc(borne.msg)}</span></div>`:`<div style="color:#BDB6A8;font-size:15px;line-height:1.7">1. Tape ton code personnel, puis OK<br>2. Choisis : arrivée, pause ou départ<br>3. Signe avec le doigt<br><span style="font-size:13px;color:#8C857A">Pas de code ? Crée-le dans l’appli : Mon profil → Code de pointage.</span></div>`}</section>`;
+  let right='';
+  if(borne.step==='sign'&&I){
+    right=`<div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:460px"><span style="font-family:var(--f-title);font-size:26px">${esc(PT_BTN[borne.action])}</span>
+      <span style="color:#BDB6A8;font-size:15px">${esc(I.prenom||'')}, signe dans le cadre avec ton doigt.</span>
+      <canvas id="bSig" width="600" height="240" style="width:100%;aspect-ratio:5/2;background:#fff;border-radius:14px;touch-action:none;cursor:crosshair"></canvas>
+      <span id="bSigErr" role="alert" style="min-height:1.2em;color:#F08A7A;font-size:14px"></span>
+      <div style="display:flex;gap:10px"><button type="button" class="b-act" data-act="sigClear" style="flex:1">Effacer</button><button type="button" class="b-act main" id="bSigOk" data-act="sigOk" style="flex:2">Valider le pointage</button></div>
+      <button type="button" class="link" data-act="borneReset" style="color:#BDB6A8">Annuler</button></div>`;
+  }else if(borne.step==='action'&&I){
+    const st=I.dernier==='arrivee'||I.dernier==='pause_fin'?'in':I.dernier==='pause_debut'?'pause':I.dernier==='depart'?'done':'out';
+    const sugg=nextActions(st);
+    right=`<div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:420px"><span style="font-family:var(--f-title);font-size:30px">Bonjour ${esc(I.prenom||'')}</span>
+      <span style="color:#BDB6A8;font-size:15px">${(I.planning||[]).length?I.planning.map(p=>esc(p.lieu==='boutique'?p.boutique:{labo:'Labo',tournee:'Tournée',bureau:'Bureau'}[p.lieu]||p.lieu)+(p.debut?' · '+hhmm(p.debut)+(p.fin?' – '+hhmm(p.fin):''):'')).join(' / '):'Pas d’affectation prévue aujourd’hui'}</span>
+      ${['arrivee','pause_debut','pause_fin','depart'].map(a=>`<button type="button" class="b-act${sugg[0]===a?' main':''}" data-act="borneSign" data-type="${a}">${PT_BTN[a]}</button>`).join('')}
+      <button type="button" class="link" data-act="borneReset" style="color:#BDB6A8">Ce n’est pas moi</button></div>`;
+  }else{
+    right=`<div style="display:flex;flex-direction:column;gap:20px;align-items:center"><span style="font-family:var(--f-title);font-size:24px">Ton code</span>
+      <div style="display:flex;gap:14px;min-height:20px">${Array.from({length:Math.max(4,borne.pin.length)},(_,i)=>`<span style="width:20px;height:20px;border-radius:999px;${i<borne.pin.length?'background:var(--gold-l)':'border:2px solid #5A5A5A'}"></span>`).join('')}</div>
+      <span role="alert" style="min-height:1.4em;color:#F08A7A;font-size:15px">${esc(borne.err)}</span>
+      <div class="b-pad">${['1','2','3','4','5','6','7','8','9','del','0','ok'].map(k=>`<button type="button" data-act="borneKey" data-k="${k}" aria-label="${k==='del'?'Effacer':k==='ok'?'Valider':k}" class="${k==='ok'?'ok':''}"${borne.busy?' disabled':''}>${k==='del'?'⌫':k==='ok'?'OK':k}</button>`).join('')}</div></div>`;
+  }
+  return `<div class="borne">${left}<section class="b-right">${right}</section></div>`;
+}
+let sigStrokes=[];
+function sigInit(){
+  const c=document.getElementById('bSig');if(!c||c.dataset.ready)return;c.dataset.ready='1';sigStrokes=[];
+  const ctx=c.getContext('2d');ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#141414';
+  let cur=null;
+  const pt=e=>{const r=c.getBoundingClientRect();return [Math.round((e.clientX-r.left)/r.width*300),Math.round((e.clientY-r.top)/r.height*120)]};
+  const draw=()=>{ctx.clearRect(0,0,c.width,c.height);sigStrokes.forEach(st=>{ctx.beginPath();st.forEach(([x,y],i)=>{const X=x*2,Y=y*2;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});if(st.length===1)ctx.lineTo(st[0][0]*2+1,st[0][1]*2+1);ctx.stroke()})};
+  c.addEventListener('pointerdown',e=>{e.preventDefault();const er=document.getElementById('bSigErr');if(er)er.textContent='';c.setPointerCapture(e.pointerId);cur=[pt(e)];sigStrokes.push(cur);draw();clearTimeout(borneT);borneT=setTimeout(borneReset,45000)});
+  c.addEventListener('pointermove',e=>{if(!cur)return;const p=pt(e),l=cur[cur.length-1];if(Math.abs(p[0]-l[0])+Math.abs(p[1]-l[1])>=2){cur.push(p);draw()}});
+  const end=()=>{cur=null};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+  c._redraw=draw;
+}
+const sigPath=()=>sigStrokes.filter(s=>s.length).map(s=>s.map(([x,y],i)=>(i?'L':'M')+' '+Math.max(0,x)+' '+Math.max(0,y)).join(' ')).join(' ');
+const sigSVG=(d,h)=>d&&/^[ML0-9 ]+$/.test(d)?`<svg viewBox="0 0 300 120" style="height:${h||36}px;width:auto;background:#fff;border:1px solid var(--line);border-radius:6px;vertical-align:middle" role="img" aria-label="Signature"><path d="${d}" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`:'';
+async function borneCall(action,signature){
+  if(borne.busy)return;borne.busy=true;borne.err='';if(borne.step!=='sign')render();
+  try{
+    const {data,error}=await sb.rpc('pointer_borne',{p_pin:borne.pin,p_action:action||null,p_signature:signature||null});
+    if(error)throw error;
+    if(!data||!data.ok){borne={pin:'',step:'pin',info:null,msg:'',err:'Code inconnu, réessaie',busy:false};return render()}
+    if(action){borne={pin:'',step:'done',info:null,msg:PT_LBL[action]+' à '+data.heure+(data.prenom?' · '+data.prenom:''),err:'',busy:false};render();clearTimeout(borneT);borneT=setTimeout(borneReset,6000);return}
+    borne.info=data;borne.step='action';borne.busy=false;render();clearTimeout(borneT);borneT=setTimeout(borneReset,30000);
+  }catch(e){borne={pin:'',step:'pin',info:null,msg:'',err:frErr(e),busy:false};render()}
+}
+
+/* --- Heures et pointages (responsables) --- */
+let heuresData=null;
+async function loadHeures(ws){
+  heuresData={ws,loading:true,pointages:[],planning:[],valid:[]};
+  const we=addDays(ws,6);
+  const [p,pl,va]=await Promise.all([sb.from('pointages').select('*').gte('jour',ws).lte('jour',we).order('at'),sb.from('planning').select('*').gte('jour',ws).lte('jour',we),sb.from('heures_validations').select('*').gte('jour',ws).lte('jour',we)]);
+  if(p.error&&/pointages/.test(p.error.message||''))toast('Base pas à jour : lance etape4.sql dans Supabase.');
+  if(!heuresData||heuresData.ws!==ws)return;
+  heuresData={ws,loading:false,pointages:p.data||[],planning:pl.data||[],valid:va.data||[]};
+  if(route==='heures')render();
+}
+const H_SEUILS=[['h_avance','Arrivée en avance de plus de',30],['h_retard','Retard de plus de',10],['h_depart_tard','Départ après l’heure prévue de plus de',30],['h_depart_tot','Départ anticipé de plus de',15]];
+const seuil=k=>{const d=H_SEUILS.find(x=>x[0]===k);const v=reg(k,d?d[2]:0);return isFinite(v)&&v>=0?v:(d?d[2]:0)};
+const lieuNom=l=>l==='labo'?'Labo':shopName(l);
+const tmin=ts=>{const f=new Date(ts);return f.getHours()*60+f.getMinutes()};
+function dayAnomalies(pts,pl,d,t){
+  const w=workOf(pts,d<t),an=w.an.slice();
+  const deb=pl.map(x=>minOf(x.debut)).filter(x=>x!=null).sort((a,b)=>a-b)[0];
+  const fin=pl.map(x=>minOf(x.fin)).filter(x=>x!=null).sort((a,b)=>b-a)[0];
+  if(w.first&&deb!=null){const m=tmin(w.first.at)-deb;if(m>seuil('h_retard'))an.push('Retard de '+m+' min');else if(-m>seuil('h_avance'))an.push('Arrivée '+(-m)+' min avant l’heure prévue')}
+  const dep=pts.filter(x=>x.type==='depart').sort((a,b)=>a.at<b.at?1:-1)[0];
+  if(dep&&fin!=null){const m=tmin(dep.at)-fin;if(m>seuil('h_depart_tard'))an.push('Départ '+m+' min après l’heure prévue');else if(-m>seuil('h_depart_tot'))an.push('Départ anticipé de '+(-m)+' min')}
+  if(pl.length&&!pts.length&&d<t)an.push('Absent (prévu au planning)');
+  if(pts.length&&!pl.length)an.push('Pointé sans être au planning');
+  if(pl.length&&!pl.some(x=>x.lieu==='bureau')){
+    const ok=new Set(pl.map(x=>x.lieu==='boutique'?x.boutique_id:'labo'));
+    const bad=[...new Set(pts.filter(x=>x.source==='borne'&&x.borne_lieu&&!ok.has(x.borne_lieu)).map(x=>x.borne_lieu))];
+    if(bad.length)an.push('Pointé à '+bad.map(lieuNom).join(', ')+' (prévu : '+[...ok].map(lieuNom).join(', ')+')');
+  }
+  return {w,an};
+}
+function weekRows(H){
+  const t=todayISO();
+  const staff=profiles.filter(p=>p.actif&&!['aucun','borne'].includes(p.role));
+  return staff.map(u=>{let P=0,W=0;const days=[];
+    for(let i=0;i<7;i++){const d=addDays(H.ws,i);const pl=H.planning.filter(x=>x.user_id===u.id&&x.jour===d);const pts=H.pointages.filter(x=>x.user_id===u.id&&x.jour===d);
+      const pm=plannedMin(pl),{w,an}=dayAnomalies(pts,pl,d,t);const valid=(H.valid||[]).find(v=>v.user_id===u.id&&v.jour===d)||null;
+      P+=pm;W+=w.min+w.live;days.push({d,pm,wm:w.min+w.live,an:valid?[]:an,anAll:an,valid,n:pts.length});}
+    return {u,P,W,days};}).filter(r=>r.P||r.W||r.days.some(x=>x.n));
+}
+function heuresView(){
+  const ws=ui.semaine||weekStart(todayISO());
+  if(!heuresData||heuresData.ws!==ws){loadHeures(ws);return `<div class="page"><p class="empty">Chargement de la semaine…</p></div>`}
+  const H=heuresData,rows=weekRows(H);
+  const anomalies=[];rows.forEach(r=>r.days.forEach(x=>x.an.forEach(a=>anomalies.push({u:r.u,d:x.d,a}))));
+  const T=rows.reduce((a,r)=>({P:a.P+r.P,W:a.W+r.W}),{P:0,W:0});
+  const sel=ui.hSel&&prof(ui.hSel.u)?ui.hSel:null;
+  const detail=sel?(()=>{const pts=H.pointages.filter(x=>x.user_id===sel.u&&x.jour===sel.d).sort((a,b)=>a.at<b.at?-1:1);const u=prof(sel.u);
+    return `<section class="card" style="border-color:var(--gold)"><div class="envoi-h"><h2>${esc(displayName(u))} · ${esc(fmtDay(sel.d))}</h2><button class="btn ghost sm" type="button" data-act="hSel" data-u="">Fermer</button></div>
+      ${pts.length?pts.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${PT_LBL[p.type]} · <b class="num">${timeOf(p.at)}</b> <span class="badge ${p.source==='correction'?'b-gold':'b-mute'}">${p.source==='correction'?'corrigé':p.source==='borne'?'borne · '+esc(lieuNom(p.borne_lieu||'labo')):p.source}</span>${sigSVG(p.signature,34)}${p.note?` <small style="color:var(--muted)">${esc(p.note)}</small>`:''}</span><button class="btn ghost sm" type="button" data-act="ptDel" data-id="${p.id}">Supprimer</button></div>`).join(''):'<p class="empty">Aucun pointage.</p>'}
+      <form id="ptForm" class="btnrow" data-u="${sel.u}" data-d="${sel.d}" novalidate><select class="inline-sel" id="ptType" aria-label="Type">${Object.entries(PT_LBL).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select><input id="ptHeure" type="time" required aria-label="Heure" style="min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit"><input id="ptNote" placeholder="Motif de la correction" aria-label="Motif" style="flex:1 1 180px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit"><button class="btn sm" type="submit">Ajouter</button></form>
+      <p class="msg err" id="ptErr" hidden></p>
+      ${(()=>{const pl=H.planning.filter(x=>x.user_id===sel.u&&x.jour===sel.d);const {an}=dayAnomalies(pts,pl,sel.d,todayISO());const v=(H.valid||[]).find(x=>x.user_id===sel.u&&x.jour===sel.d);
+        return `<div class="grid" style="gap:8px;border-top:1px solid var(--cream);padding-top:12px">${an.length?`<div class="chips">${an.map(a=>`<span class="chip" style="border-color:var(--bad)">${esc(a)}</span>`).join('')}</div>`:'<span class="meta">Aucune anomalie détectée.</span>'}
+        ${v?`<div class="btnrow"><span class="badge b-good">Journée validée par ${esc(displayName(prof(v.valide_par)))}</span>${v.note?`<span class="meta">${esc(v.note)}</span>`:''}<button class="btn ghost sm" type="button" data-act="hUnvalid" data-u="${sel.u}" data-d="${sel.d}">Annuler la validation</button></div>`
+           :`<div class="btnrow"><input id="hvNote" placeholder="Note (ex. : renfort demandé, retard justifié)" aria-label="Note de validation" style="flex:1 1 220px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit"><button class="btn sm" type="button" data-act="hValid" data-u="${sel.u}" data-d="${sel.d}">Valider la journée</button></div>`}</div>`})()}
+      </section>`})():'';
+  return `<div class="page">
+  <div class="head"><div><h1>Heures et pointages</h1><p>Semaine du ${esc(fmtDay(ws))} · prévu au planning / pointé</p></div>
+    <div class="daynav"><button class="iconbtn" type="button" data-act="semaine" data-d="-7" aria-label="Semaine précédente">‹</button><b>Sem. du ${parseISO(ws).getDate()} ${MOIS[parseISO(ws).getMonth()]}</b><button class="iconbtn" type="button" data-act="semaine" data-d="7" aria-label="Semaine suivante">›</button></div></div>
+  <section class="grid g4">
+    <div class="card kpi"><span class="lbl">Heures pointées</span><span class="val num">${hm(T.W)}</span><span class="hint">${rows.length} personne${rows.length>1?'s':''}</span></div>
+    <div class="card kpi"><span class="lbl">Heures prévues</span><span class="val num">${hm(T.P)}</span><span class="hint">d’après le planning</span></div>
+    <div class="card kpi"><span class="lbl">Écart</span><span class="val num" style="color:${T.W-T.P>0?'var(--gold-d)':'inherit'}">${hm(T.W-T.P)}</span><span class="hint">pointé − prévu</span></div>
+    <div class="card kpi"><span class="lbl">Anomalies</span><span class="val num" style="color:${anomalies.length?'var(--bad)':'inherit'}">${anomalies.length}</span><span class="hint">non validées · horaires, lieu, oublis</span></div>
+  </section>
+  ${detail}
+  <section class="card"><div class="envoi-h"><h2>Semaine</h2><div class="btnrow"><button class="btn ghost sm" type="button" data-act="csvWeek">Exporter la semaine (CSV)</button><button class="btn ghost sm" type="button" data-act="csvMonth">Exporter le mois (CSV)</button></div></div>
+    <div class="tbl-wrap"><table style="min-width:860px"><thead><tr><th>Membre</th>${Array.from({length:7},(_,i)=>{const d=addDays(ws,i),x=parseISO(d);return `<th>${JOURS[x.getDay()].slice(0,3)}. ${x.getDate()}</th>`}).join('')}<th>Total</th></tr></thead><tbody>
+    ${rows.length?rows.map(r=>`<tr><td><div class="who"><span class="avatar">${esc(initials(r.u))}</span><span>${esc(displayName(r.u))}<small>${esc(roleShort(r.u.role))}</small></span></div></td>
+      ${r.days.map(x=>`<td><button type="button" data-act="hSel" data-u="${r.u.id}" data-d="${x.d}" class="hcell${x.valid?' ok':x.an.length?' bad':Math.abs(x.wm-x.pm)>15&&x.pm?' warn':''}" title="${esc(x.valid?'Validée':x.an.join(', '))}">${x.wm||x.n?`<b>${hm(x.wm)}</b>`:'<span style="color:var(--muted)">–</span>'}<small>${x.pm?hm(x.pm):''}</small></button></td>`).join('')}
+      <td class="num"><b>${hm(r.W)}</b><small style="display:block;color:var(--muted)">${hm(r.P)}</small></td></tr>`).join(''):`<tr><td colspan="9"><p class="empty">Aucune heure prévue ni pointée cette semaine.</p></td></tr>`}
+    </tbody></table></div>
+    <p class="note">En gras : pointé. En petit : prévu. Rouge : anomalie (horaires, lieu, oubli). Doré : écart de plus de 15 min. Vert : journée validée. Clique une case pour voir les pointages, les signatures, corriger ou valider.</p></section>
+  <section class="card"><h2>Seuils des anomalies</h2>
+    <p class="sub">En minutes, par rapport aux horaires du planning. Modifiable par les responsables ; s’applique tout de suite à toutes les semaines.</p>
+    <div class="grid g4">${H_SEUILS.map(([k,l])=>`<label class="field">${esc(l)}<span style="display:flex;align-items:center;gap:8px"><input type="number" min="0" step="5" inputmode="numeric" data-act="reglage" data-k="${k}" value="${seuil(k)}" style="max-width:110px"> min</span></label>`).join('')}</div>
+  </section>
+  <section class="card"><h2>Anomalies <span class="badge ${anomalies.length?'b-bad':'b-mute'}">${anomalies.length}</span></h2>
+    ${anomalies.length?anomalies.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span><b>${esc(displayName(a.u))}</b> · ${esc(fmtDay(a.d))} · ${esc(a.a)}</span><button class="btn ghost sm" type="button" data-act="hSel" data-u="${a.u.id}" data-d="${a.d}">Corriger</button></div>`).join(''):'<p class="empty">Aucune anomalie cette semaine.</p>'}</section>
+  </div>`;
+}
+function downloadCSV(name,rows){
+  const csv='﻿'+rows.map(r=>r.map(v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(';')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+const hdec=min=>(Math.round((min||0)/60*100)/100).toString().replace('.',',');
+async function exportHeures(from,to,name){
+  const [p,pl,va]=await Promise.all([sb.from('pointages').select('*').gte('jour',from).lte('jour',to),sb.from('planning').select('*').gte('jour',from).lte('jour',to),sb.from('heures_validations').select('*').gte('jour',from).lte('jour',to)]);
+  if(p.error)return toast(frErr(p.error));
+  const t=todayISO(),out=[['Membre','E-mail','Rôle','Jour','Prévu (h)','Pointé (h)','Écart (h)','Anomalies','Validé']],tot={};
+  profiles.filter(u=>!['aucun','borne'].includes(u.role)).forEach(u=>{
+    for(let d=from;d<=to;d=addDays(d,1)){const pts=(p.data||[]).filter(x=>x.user_id===u.id&&x.jour===d),pls=(pl.data||[]).filter(x=>x.user_id===u.id&&x.jour===d);if(!pts.length&&!pls.length)continue;
+      const {w,an}=dayAnomalies(pts,pls,d,t),pm=plannedMin(pls),wm=w.min+w.live;const v=(va.data||[]).find(x=>x.user_id===u.id&&x.jour===d);tot[u.id]=tot[u.id]||{P:0,W:0};tot[u.id].P+=pm;tot[u.id].W+=wm;
+      out.push([(u.prenom?u.prenom+' '+(u.nom||''):roleShort(u.role)).trim(),u.email,roleLabel(u.role),d,hdec(pm),hdec(wm),hdec(wm-pm),an.join(', '),v?'oui'+(v.note?' ('+v.note+')':''):'']);}
+  });
+  out.push([]);out.push(['TOTAL PAR PERSONNE']);
+  Object.entries(tot).forEach(([id,v])=>{const u=prof(id);out.push([(u.prenom?u.prenom+' '+(u.nom||''):roleShort(u.role)).trim(),u.email,roleLabel(u.role),'',hdec(v.P),hdec(v.W),hdec(v.W-v.P),''])});
+  downloadCSV(name,out);toast('Export téléchargé');
+}
+
+/* --- Agenda --- */
+const AG_CAT={evenement:['Commandes et événements','#F4ECD8','#5C4510'],production:['Parfums et production','#141414','#E6C15C'],admin:['Admin et compta','#E3EDF6','#1F3F5E'],equipe:['Équipe','#EAF3E6','#24522C'],marketing:['Marketing','#F6E1E6','#7A2A40'],fermeture:['Fermetures et fériés','#EFE7DA','#4A3D31']};
+let agData=null;
+async function loadAgenda(m){
+  agData={m,loading:true,items:[]};
+  const from=addDays(m+'-01',-7),to=addDays(lastOfMonth(m),40);
+  const {data,error}=await sb.from('evenements').select('*').lte('jour',to).or(`fin.gte.${from},and(fin.is.null,jour.gte.${from})`).order('jour');
+  if(error&&/evenements/.test(error.message||''))toast('Base pas à jour : lance etape4.sql dans Supabase.');
+  if(!agData||agData.m!==m)return;agData={m,loading:false,items:data||[]};if(route==='agenda')render();
+}
+function agendaView(){
+  const m=ui.agMois||monthOf(todayISO());
+  if(!agData||agData.m!==m){loadAgenda(m);return `<div class="page"><p class="empty">Chargement de l’agenda…</p></div>`}
+  const off=ui.agOff||{};const cats=Object.keys(AG_CAT).filter(k=>k!=='admin'||isResp(me));
+  const items=agData.items.filter(e=>!off[e.categorie]);
+  const zone='C';
+  const calOn=d=>off.fermeture?[]:calendrier.filter(c=>c.debut<=d&&c.fin>=d&&(c.zone==='toutes'||c.zone===zone));
+  const on=d=>items.filter(e=>e.jour<=d&&(e.fin||e.jour)>=d);
+  const first=parseISO(m+'-01'),lead=(first.getDay()+6)%7,last=+lastOfMonth(m).slice(8),t=todayISO();
+  const pill=k=>`display:block;padding:3px 6px;border-radius:6px;font-size:11px;line-height:1.3;background:${AG_CAT[k][1]};color:${AG_CAT[k][2]};overflow-wrap:anywhere`;
+  let cells='';for(let i=0;i<lead;i++)cells+='<div></div>';
+  for(let n=1;n<=last;n++){const d=m+'-'+pad(n);const cal=calOn(d);const vac=cal.some(c=>c.type==='vacances');const ev=on(d);
+    cells+=`<div class="agday${d===t?' today':''}"><span class="agn">${n}</span>${vac?'<span style="height:4px;border-radius:999px;background:#8FB3D9"></span>':''}${cal.filter(c=>c.type!=='vacances').map(c=>`<span style="${pill('fermeture')}">${esc(c.libelle)}</span>`).join('')}${ev.map(e=>`<span style="${pill(e.categorie)}">${e.heure?hhmm(e.heure)+' · ':''}${esc(e.titre)}</span>`).join('')}</div>`}
+  const up=agData.items.filter(e=>(e.fin||e.jour)>=t&&(e.categorie!=='admin'||isResp(me))).slice(0,10);
+  return `<div class="page">
+  <div class="head"><div><h1>Agenda</h1><p>Dates importantes, événements et échéances de l’équipe</p></div>
+    <div class="daynav"><button class="iconbtn" type="button" data-act="agMois" data-d="-1" aria-label="Mois précédent">‹</button><b>${esc(monthLabel(m))}</b><button class="iconbtn" type="button" data-act="agMois" data-d="1" aria-label="Mois suivant">›</button></div></div>
+  <div class="chips" role="group" aria-label="Catégories">${cats.map(k=>`<button type="button" class="chip" data-act="agCat" data-k="${k}" aria-pressed="${!off[k]}" style="cursor:pointer;${off[k]?'opacity:.45':''}"><span class="sw" style="background:${AG_CAT[k][1]};border-color:${AG_CAT[k][2]}"></span>${AG_CAT[k][0]}</button>`).join('')}</div>
+  <div class="grid g2" style="align-items:start;grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    <section class="card"><div class="tbl-wrap"><div class="agrid">${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(h=>`<span class="agh">${h}</span>`).join('')}${cells}</div></div>
+      <p class="note"><span style="display:inline-block;width:22px;height:4px;border-radius:999px;background:#8FB3D9;vertical-align:middle"></span> Vacances scolaires (zone C) · les fériés et fêtes viennent du calendrier de la répartition.</p></section>
+    <div class="grid" style="gap:16px">
+      <section class="card"><h2>À venir</h2>${up.length?up.map(e=>{const d=parseISO(e.jour);return `<div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--cream)"><span style="display:flex;flex-direction:column;align-items:center;min-width:40px"><b style="font-family:var(--f-title);font-size:22px;line-height:1">${d.getDate()}</b><small style="color:var(--muted)">${MOIS[d.getMonth()].slice(0,4)}.</small></span><span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1"><b style="font-size:14px">${esc(e.titre)}</b><small style="color:var(--muted)">${[e.heure?hhmm(e.heure):'',e.fin&&e.fin!==e.jour?'jusqu’au '+fmtDay(e.fin):'',e.boutique_id?shopName(e.boutique_id):'',e.note||''].filter(Boolean).map(esc).join(' · ')}</small><span class="badge" style="align-self:flex-start;background:${AG_CAT[e.categorie][1]};color:${AG_CAT[e.categorie][2]}">${AG_CAT[e.categorie][0]}</span></span>${isResp(me)?`<button class="btn ghost sm" type="button" data-act="agDel" data-id="${e.id}">Retirer</button>`:''}</div>`}).join(''):'<p class="empty">Rien de prévu.</p>'}</section>
+      ${isResp(me)?`<section class="card"><h2>Ajouter un événement</h2><form id="agForm" class="grid" style="gap:10px" novalidate>
+        <label class="field">Titre<input id="agTitre" placeholder="Mariage 60 parts, inventaire, réunion…"></label>
+        <div class="row2"><label class="field">Date<input id="agJour" type="date" value="${monthOf(t)===m?t:m+'-01'}"></label><label class="field">Jusqu’au (facultatif)<input id="agFin" type="date"></label></div>
+        <div class="row2"><label class="field">Heure<input id="agHeure" type="time"></label><label class="field">Catégorie<select id="agCat">${Object.entries(AG_CAT).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select></label></div>
+        <label class="field">Point de vente<select id="agShop"><option value="">Aucun / tous</option>${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}">${esc(b.nom)}</option>`).join('')}</select></label>
+        <label class="field">Note<input id="agNote" placeholder="Qui, quoi, acompte…"></label>
+        <p class="msg err" id="agErr" hidden></p><button class="btn sm" type="submit">Ajouter</button></form>
+        <p class="note">« Admin et compta » n’est visible que par les responsables.</p></section>`:''}
+    </div>
+  </div></div>`;
+}
+
+/* --- Code de pointage (profil) --- */
+let pinPointage=null;
+async function loadPinPointage(){try{const {data}=await sb.rpc('pin_pointage_defini');pinPointage=!!data}catch(e){pinPointage=false}if(route==='profil')render()}
+function pinPointageSection(){
+  if(me.role==='borne')return '';
+  if(pinPointage===null){loadPinPointage();}
+  return `<section class="card"><h2>Code de pointage (borne)</h2>
+    <p class="sub">${pinPointage?'Ton code est enregistré. Tu peux le changer ici.':'Indispensable pour pointer : le pointage se fait uniquement sur la borne du labo ou de la boutique. 4 à 6 chiffres, personnel : ne le donne à personne.'}</p>
+    <form id="pinPtForm" class="btnrow" novalidate><input id="ppA" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Code" aria-label="Nouveau code" style="width:110px;min-height:44px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit;font-size:16px"><input id="ppB" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Confirmer" aria-label="Confirmer le code" style="width:110px;min-height:44px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit;font-size:16px"><button class="btn sm" type="submit">${pinPointage?'Changer':'Enregistrer'}</button></form>
+    <p class="msg err" id="ppErr" hidden></p><p class="note">Le code est chiffré : personne, même un responsable, ne peut le lire.</p></section>`;
+}
+
 /* --- Équipe --- */
 function teamView(){
   const waiting=profiles.filter(p=>p.role==='aucun'&&p.actif);
@@ -934,7 +1205,7 @@ function teamView(){
   <section class="card"><h2>Équipe <span class="badge b-mute">${team.filter(p=>p.actif).length} actif${team.filter(p=>p.actif).length>1?'s':''}</span></h2>
     <div class="tbl-wrap"><table style="min-width:480px"><thead><tr><th>Membre</th><th>Rôle</th><th>Accès</th></tr></thead><tbody>
     ${team.map(p=>{const self=p.id===me.id;return `<tr><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(p))}</span><span>${esc(displayName(p))}${self?' (toi)':''}<small>${esc(p.email)}</small></span></div></td>
-      <td><select data-act="setRole" data-id="${p.id}" aria-label="Rôle"${self?' disabled':''}>${roleOptions(p.role)}</select></td>
+      <td><select data-act="setRole" data-id="${p.id}" aria-label="Rôle"${self?' disabled':''}>${roleOptions(p.role)}</select>${p.role==='borne'?`<select data-act="setBorneLieu" data-id="${p.id}" aria-label="Lieu de la borne" style="margin-top:6px;display:block"><option value="">Lieu : Labo</option>${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}"${b.id===p.boutique_id?' selected':''}>Lieu : ${esc(b.nom)}</option>`).join('')}</select>`:''}</td>
       <td>${self?'<span class="badge b-good">Actif</span>':`<button class="btn sm ${p.actif?'ghost':''}" type="button" data-act="toggle" data-id="${p.id}">${p.actif?'Désactiver':'Réactiver'}</button>`}</td></tr>`}).join('')}
     </tbody></table></div></section></div>`;
 }
@@ -980,7 +1251,8 @@ function profileView(){
       <section class="card"><h2>Code PIN</h2>
         <p class="sub">${pinRec?`Code à ${pinRec.len} chiffres actif sur cet appareil. Il est demandé à l’ouverture et après 2 minutes en arrière-plan.`:'Avec un code PIN, tu ouvres l’appli sur ce téléphone sans retaper ton mot de passe.'}</p>
         <div class="btnrow">${pinRec?'<button class="btn ghost sm" type="button" data-act="pinChange">Changer le PIN</button><button class="btn ghost sm" type="button" data-act="pinOff">Désactiver</button><button class="btn ghost sm" type="button" data-act="lock">Verrouiller maintenant</button>':'<button class="btn sm" type="button" data-act="pinOn">Activer un code PIN</button>'}</div></section>
-      <section class="card"><h2>Session</h2><button class="btn ghost" type="button" data-act="logout">Se déconnecter</button></section>
+      ${pinPointageSection()}
+      <section class="card"><h2>Session</h2><button class="btn ghost" type="button" data-act="logout">Se déconnecter</button>${me.role==='borne'?'<a class="btn ghost sm" href="#accueil">Retour à la borne</a>':''}</section>
     </div></div></div>`;
 }
 
@@ -1039,6 +1311,21 @@ document.addEventListener('click',async ev=>{
     case 'calDel':if(!armed(t))return;rep.target=null;return act(()=>sb.from('calendrier').delete().eq('id',id),'Retiré du calendrier');
     case 'repReset':rep.target=null;return render();
     case 'repSend':return repSend(t);
+    case 'borneKey':{const k=t.dataset.k;borne.err='';if(k==='del')borne.pin=borne.pin.slice(0,-1);else if(k==='ok'){if(borne.pin.length<4){borne.err='4 à 6 chiffres';return render()}return borneCall(null)}else if(borne.pin.length<6)borne.pin+=k;return render()}
+    case 'borneSign':borne.action=t.dataset.type;borne.step='sign';render();clearTimeout(borneT);borneT=setTimeout(borneReset,45000);return;
+    case 'sigClear':{sigStrokes=[];const c=document.getElementById('bSig');if(c&&c._redraw)c._redraw();return}
+    case 'sigOk':{const d=sigPath();const pts=sigStrokes.reduce((a,s)=>a+s.length,0);if(pts<8||d.length<20){const e=document.getElementById('bSigErr');if(e)e.textContent='Signe d’abord dans le cadre.';return}t.disabled=true;return borneCall(borne.action,d)}
+    case 'hValid':{const note=($('#hvNote')||{}).value||null;const r=await act(()=>sb.from('heures_validations').upsert({user_id:t.dataset.u,jour:t.dataset.d,valide_par:me.id,note:note&&note.trim()||null}),'Journée validée');if(r&&heuresData)loadHeures(heuresData.ws);return}
+    case 'hUnvalid':{const r=await act(()=>sb.from('heures_validations').delete().eq('user_id',t.dataset.u).eq('jour',t.dataset.d),'Validation annulée');if(r&&heuresData)loadHeures(heuresData.ws);return}
+    case 'borneReset':return borneReset();
+    case 'semaine':ui.semaine=addDays(ui.semaine||weekStart(todayISO()),+t.dataset.d);ui.hSel=null;heuresData=null;return render();
+    case 'hSel':ui.hSel=t.dataset.u?{u:t.dataset.u,d:t.dataset.d}:null;render();if(ui.hSel)window.scrollTo({top:0,behavior:'smooth'});return;
+    case 'ptDel':{if(!armed(t))return;const r=await act(()=>sb.from('pointages').delete().eq('id',id),'Pointage supprimé');if(r&&heuresData)loadHeures(heuresData.ws);return}
+    case 'csvWeek':{const ws=ui.semaine||weekStart(todayISO());return exportHeures(ws,addDays(ws,6),'heures-semaine-'+ws+'.csv')}
+    case 'csvMonth':{const m=monthOf(ui.semaine||todayISO());return exportHeures(m+'-01',lastOfMonth(m),'heures-'+m+'.csv')}
+    case 'agMois':{const [y,mo]=(ui.agMois||monthOf(todayISO())).split('-').map(Number);ui.agMois=isoOf(new Date(y,mo-1+(+t.dataset.d),1)).slice(0,7);agData=null;return render()}
+    case 'agCat':{ui.agOff=ui.agOff||{};ui.agOff[t.dataset.k]=!ui.agOff[t.dataset.k];return render()}
+    case 'agDel':{if(!armed(t))return;const r=await act(()=>sb.from('evenements').delete().eq('id',id),'Événement retiré');if(r)loadAgenda(ui.agMois||monthOf(todayISO()));return}
     case 'laboTab':ui.laboTab=t.dataset.t;return render();
     case 'lotPrefill':ui.lotPrefill={p:t.dataset.p,q:+t.dataset.q};render();const el=$('#loIngr');if(el)el.focus();return;
     case 'lotStep':{const l=lots.find(x=>x.id===id);if(!l)return;const st=LOT_STEPS.find(s=>s.k===t.dataset.k);const row={};row[st.k]=new Date().toISOString();
@@ -1077,6 +1364,7 @@ document.addEventListener('change',ev=>{
   const s=ev.target.closest('select[data-act]');if(!s)return;
   const id=s.dataset.id,a=s.dataset.act;
   if(a==='setRole')act(()=>sb.from('profiles').update({role:s.value}).eq('id',id),'Rôle mis à jour');
+  if(a==='setBorneLieu')act(()=>sb.from('profiles').update({boutique_id:s.value||null}).eq('id',id),'Lieu de la borne mis à jour');
   if(a==='setStatut')act(()=>sb.from('envois').update({statut:s.value}).eq('id',id),'Statut mis à jour');
   if(a==='setLivreur')act(()=>sb.from('envois').update({livreur_id:s.value||null}).eq('id',id),'Livreur mis à jour');
 });
@@ -1142,6 +1430,24 @@ document.addEventListener('submit',async ev=>{
     const r=await sb.from('cloture_lignes').upsert(lines.map(l=>Object.assign({cloture_id:data.id},l)),{onConflict:'cloture_id,parfum_id'});
     if(r.error)return fail('#clErr',frErr(r.error));
     toast('Clôture enregistrée');reload();return;
+  }
+  if(f.id==='ptForm'){
+    const h=$('#ptHeure').value;if(!h)return fail('#ptErr','Indique l’heure.');
+    const at=new Date(f.dataset.d+'T'+h+':00').toISOString();
+    const {error}=await sb.from('pointages').insert({user_id:f.dataset.u,jour:f.dataset.d,type:$('#ptType').value,at,note:$('#ptNote').value.trim()||'Correction'});
+    if(error)return fail('#ptErr',frErr(error));toast('Pointage ajouté');if(heuresData)loadHeures(heuresData.ws);return;
+  }
+  if(f.id==='agForm'){
+    const titre=$('#agTitre').value.trim(),jour=$('#agJour').value,fin=$('#agFin').value||null;
+    if(!titre)return fail('#agErr','Donne un titre.');if(!jour)return fail('#agErr','Choisis la date.');if(fin&&fin<jour)return fail('#agErr','La fin doit être après le début.');
+    const {error}=await sb.from('evenements').insert({titre,jour,fin,heure:$('#agHeure').value||null,categorie:$('#agCat').value,boutique_id:$('#agShop').value||null,note:$('#agNote').value.trim()||null});
+    if(error)return fail('#agErr',frErr(error));toast('Ajouté à l’agenda');ui.agMois=monthOf(jour);loadAgenda(ui.agMois);return;
+  }
+  if(f.id==='pinPtForm'){
+    const a=$('#ppA').value.trim(),b=$('#ppB').value.trim();
+    if(!/^[0-9]{4,6}$/.test(a))return fail('#ppErr','Le code doit faire 4 à 6 chiffres.');if(a!==b)return fail('#ppErr','Les deux codes ne correspondent pas.');
+    const {error}=await sb.rpc('set_pin_pointage',{p_pin:a});if(error)return fail('#ppErr',frErr(error));
+    pinPointage=true;toast('Code de pointage enregistré');render();return;
   }
   if(f.id==='lotForm'){
     const pid=$('#loParfum').value,q=int($('#loQte').value);if(!q)return fail('#loErr','Indique la quantité de flans.');
