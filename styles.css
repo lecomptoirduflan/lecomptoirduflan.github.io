@@ -209,3 +209,12 @@ td select{font:inherit;font-size:14px;border:1px solid var(--line2);border-radiu
 
 .ptable td input{width:58px}
 @media (max-width:480px){.ptable{min-width:440px}.ptable th,.ptable td{padding:8px 4px}}
+
+/* Photos des parfums */
+img.sw.ph{width:28px;height:28px;flex:0 0 28px;border-radius:999px;object-fit:cover;border:1px solid var(--line);vertical-align:middle;background:var(--cream)}
+.chip img.sw.ph{width:20px;height:20px;flex-basis:20px}
+.qty label img.sw.ph{flex:0 0 32px;width:32px;height:32px}
+td img.sw.ph{margin-right:6px}
+.pphoto{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--cream)}
+.parfum.off .pphoto{filter:grayscale(.7);opacity:.55}
+.parfum .bandeau{height:auto;aspect-ratio:4/3}

@@ -48,12 +48,14 @@ const CAN={
   accueil:()=>true, profil:()=>true, planning:()=>true,
   tableau:()=>isResp(me), equipe:()=>isResp(me), envois:()=>isResp(me), ventes:()=>isResp(me), parfums:()=>isResp(me),
   production:()=>isResp(me)||isLabo(me),
+  repartition:()=>isResp(me)||me.role==='chef_patissier',
   boutiques:()=>isResp(me)||me.role==='vendeur'||me.role==='livreur',
   journee:()=>me.role==='vendeur', tournee:()=>me.role==='livreur'
 };
 function navItems(){
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['ventes','Ventes du jour'],['parfums','Parfums'],['equipe','Équipe'],['boutiques','Points de vente']];
-  if(isLabo(me))return [['accueil','Accueil'],['production','Production du jour'],['planning','Mon planning']];
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['production','Production'],['ventes','Ventes du jour'],['parfums','Parfums'],['equipe','Équipe'],['boutiques','Points de vente']];
+  if(me.role==='chef_patissier')return [['accueil','Accueil'],['production','Production'],['repartition','Répartition de demain'],['planning','Mon planning']];
+  if(isLabo(me))return [['accueil','Accueil'],['production','Production'],['planning','Mon planning']];
   if(me.role==='vendeur')return [['accueil','Accueil'],['journee','Ma journée'],['planning','Mon planning'],['boutiques','Points de vente']];
   if(me.role==='livreur')return [['accueil','Accueil'],['tournee','Ma tournée'],['planning','Mon planning'],['boutiques','Points de vente']];
   return [['accueil','Accueil'],['planning','Mon planning']];
@@ -63,14 +65,14 @@ function navItems(){
 const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes spéciales','Événements, entreprises, acomptes',null,5)]},
-  {key:'resp_production',title:'Production',tiles:[T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan',null,3)]},
+  {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan',null,3)]},
   {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions sur 7 jours','Production et équipe conseillées',null,3),T('Agenda','Dates importantes et événements',null,4)]},
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances',null,3),T('Heures et pointages','Préparation de la paie',null,4)]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros',null,6),T('Réseau de franchises','Chiffres consolidés',null,6),T('Réseaux sociaux','Suivi du community manager',null,6)]}
 ];
-const LABO_TILES=[T('Production du jour','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Étapes de production','Cuisson, refroidissement, garnissage',null,3),T('Traçabilité HACCP','Lots, températures, DLC',null,3)];
+const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Étapes de production','Cuisson, refroidissement, garnissage',null,3),T('Traçabilité HACCP','Lots, températures, DLC',null,3)];
 const ROLE_TILES={
-  chef_patissier:LABO_TILES, patissier:LABO_TILES,
+  chef_patissier:[T('Répartition de demain','Quantités par boutique, à envoyer au labo','#repartition')].concat(LABO_TILES), patissier:LABO_TILES,
   vendeur:[T('Ma journée','Réception, réassort, clôture','#journee',null,'reception'),T('Mon planning','Mes boutiques et horaires','#planning'),T('Points de vente','Adresses et horaires','#boutiques'),T('Commandes clients','Retraits click & collect',null,5)],
   livreur:[T('Ma tournée','Envois à livrer','#tournee',null,'tournee'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Points de vente','Adresses et horaires','#boutiques')],
   cm:[T('Mon planning','Mes horaires de la semaine','#planning'),T('Réseaux sociaux','Statistiques et objectifs',null,6),T('Nouvelle publication','Préparer et programmer',null,6),T('Calendrier éditorial','Le mois en un coup d\'œil',null,6)]
@@ -83,7 +85,8 @@ const STEP_LBL={valide:'Validé',pret:'Prêt',en_route:'En route',livre:'Livré'
 
 /* ---------- État ---------- */
 let sb=null,user=null,me=null,loaded=false,channel=null;
-let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[];
+let profiles=[],boutiques=[],invitations=[],parfums=[],planning=[],envois=[],clotures=[],envoisAll=[],cloturesAll=[],calendrier=[];
+let rep={target:null,adj:{},adjTouched:{},qty:{},inc:{},liv:{}},meteo={};
 let route='accueil',day=todayISO(),authMode='login',justLoggedIn=false,recovering=false;
 let ui={editShop:null,addShop:false,lastInvite:null,newEnvoi:false,editParfum:null,addParfum:false};
 let locked=false,pinRec=null,mode='unlock',buf='',first='',fails=0,waitUntil=0,hiddenAt=0,pinAction=null;
@@ -115,22 +118,93 @@ function setOffline(){$('#offline').hidden=navigator.onLine}
 window.addEventListener('online',()=>{setOffline();if(user)loadAll()});
 window.addEventListener('offline',setOffline);
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Message copié')}catch(e){toast('Sélectionne le texte et copie-le')}}
-const sw=c=>`<span class="sw" style="background:${esc(c||'#ccc')}"></span>`;
-function chipsOf(lines,key){key=key||'quantite';const ls=sortLines(lines).filter(l=>(l[key]||0)>0);return ls.length?`<div class="chips">${ls.map(l=>{const p=parfum(l.parfum_id)||{};return `<span class="chip">${sw(p.couleur)}${esc(p.nom||'?')} <b>${l[key]}</b></span>`}).join('')}</div>`:'<span class="meta">Aucune quantité</span>'}
+const PHOTOS=["photos/cacahuete.jpg", "photos/coco.jpg", "photos/flankie-cookie.jpg", "photos/flankie-pecan.jpg", "photos/flankie-pistache.jpg", "photos/fraise-basilic.jpg", "photos/framboise.jpg", "photos/frangipane.jpg", "photos/mangue.jpg", "photos/marbre.jpg", "photos/marron.jpg", "photos/myrtille.jpg", "photos/noisette.jpg", "photos/passion.jpg", "photos/pecan.jpg", "photos/pistache.jpg", "photos/pur-chocolat-ghana-80.jpg", "photos/sesame.jpg", "photos/speculos.jpg", "photos/vanille.jpg"];
+const sw=x=>{if(x&&typeof x==='object'){if(x.photo)return `<img class="sw ph" src="${esc(x.photo)}" alt="" loading="lazy">`;x=x.couleur}return `<span class="sw" style="background:${esc(x||'#ccc')}"></span>`};
+function chipsOf(lines,key){key=key||'quantite';const ls=sortLines(lines).filter(l=>(l[key]||0)>0);return ls.length?`<div class="chips">${ls.map(l=>{const p=parfum(l.parfum_id)||{};return `<span class="chip">${sw(p)}${esc(p.nom||'?')} <b>${l[key]}</b></span>`}).join('')}</div>`:'<span class="meta">Aucune quantité</span>'}
 function stepsOf(e){if(e.statut==='signale'||e.statut==='refuse')return `<span class="badge ${STATUT[e.statut][1]}">${STATUT[e.statut][0]}</span>`;const i=STEPS.indexOf(e.statut);return `<div class="steps">${STEPS.map((s,k)=>`<span class="${k<i?'done':k===i?'now':''}">${STEP_LBL[s]}</span>`).join('')}</div>`}
 function dayNav(title){return `<div class="daynav" role="group" aria-label="Choisir le jour"><button class="iconbtn" type="button" data-act="day" data-d="-1" aria-label="Jour précédent">‹</button><b>${esc(title||fmtDay(day))}</b><button class="iconbtn" type="button" data-act="day" data-d="1" aria-label="Jour suivant">›</button>${day!==todayISO()?'<button class="btn ghost sm" type="button" data-act="day" data-d="0">Aujourd’hui</button>':''}</div>`}
-function qtyGrid(prefix,values,list){values=values||{};return `<div class="qty">${list.map(p=>`<label title="${esc(p.nom)}">${sw(p.couleur)}<span>${esc(p.nom)}</span><input type="number" min="0" step="1" inputmode="numeric" id="${prefix}-${p.id}" value="${values[p.id]||''}" placeholder="0" aria-label="${esc(p.nom)}"></label>`).join('')}</div>`}
+function qtyGrid(prefix,values,list){values=values||{};return `<div class="qty">${list.map(p=>`<label title="${esc(p.nom)}">${sw(p)}<span>${esc(p.nom)}</span><input type="number" min="0" step="1" inputmode="numeric" id="${prefix}-${p.id}" value="${values[p.id]||''}" placeholder="0" aria-label="${esc(p.nom)}"></label>`).join('')}</div>`}
 function readGrid(prefix,list){const out=[];list.forEach(p=>{const el=document.getElementById(prefix+'-'+p.id);const q=el?int(el.value):0;if(q)out.push({parfum_id:p.id,q})});return out}
 const dispo=()=>parfums.filter(p=>p.disponible);
 const counts=()=>({
   signale:envois.filter(e=>e.statut==='signale').length,
-  labo:envois.filter(e=>e.statut==='valide').length,
+  labo:envoisAll.filter(e=>e.statut==='valide'&&(e.jour===todayISO()||e.jour===addDays(todayISO(),1))).length,
   tournee:envois.filter(e=>e.livreur_id===me.id&&e.statut==='pret').length,
   reception:envois.filter(e=>e.statut==='en_route').length
 });
-const prixEntier=p=>p&&p.prix_entier!=null?+p.prix_entier:(p?4*(+p.prix_quart):0);
-function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)+(l.entiers_vendus||0)*prixEntier(p)},0)}
-function recuOf(boutiqueId){const r={};envois.filter(e=>e.boutique_id===boutiqueId&&e.statut==='livre').forEach(e=>(e.envoi_lignes||[]).forEach(l=>r[l.parfum_id]=(r[l.parfum_id]||0)+l.quantite));return r}
+function caOf(c){return (c.cloture_lignes||[]).reduce((a,l)=>{const p=parfum(l.parfum_id);return a+(l.quarts_vendus||0)*(p?+p.prix_quart:0)},0)}
+const pertesOf=l=>(l.quarts_jetes||0)+(l.quarts_casses||0)+(l.quarts_donnes||0);
+
+/* ---------- Stock en parts (un flan = 4 parts, vendable 3 jours à partir de sa production) ---------- */
+const PARTS=4, DUREE=3;
+const lastDay=d=>addDays(d,DUREE-1);
+function takeFrom(lots,q,dayX,mode){
+  // mode 'vente' : lots encore vendables, du plus ancien au plus récent ; 'jete' : périmés d'abord ; sinon tout
+  let left=q;
+  const order=lots.slice().sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
+  const pass=mode==='vente'?[order.filter(l=>lastDay(l.d)>=dayX),order]:mode==='jete'?[order.filter(l=>lastDay(l.d)<dayX),order]:[order];
+  for(const list of pass){for(const l of list){if(!left)break;const t=Math.min(l.q,left);l.q-=t;left-=t}}
+  for(let i=lots.length-1;i>=0;i--)if(lots[i].q<=0)lots.splice(i,1);
+  return left;
+}
+function arrivals(b,p,d,onlyDelivered){
+  const out=[];
+  envoisAll.filter(e=>e.boutique_id===b&&e.jour===d&&(onlyDelivered?e.statut==='livre':!['signale','refuse'].includes(e.statut))).forEach(e=>(e.envoi_lignes||[]).forEach(l=>{if(l.parfum_id===p&&l.quantite>0)out.push({d:e.produit_le||addDays(d,-1),q:l.quantite*PARTS})}));
+  return out;
+}
+const clotureLine=(b,p,d)=>{const c=cloturesAll.find(x=>x.boutique_id===b&&x.jour===d);return c?(c.cloture_lignes||[]).find(l=>l.parfum_id===p)||{}:null};
+// Lots restants à la FIN du jour `upto` (selon les réceptions et clôtures connues)
+function lotsAt(b,p,upto){
+  const lots=[];
+  for(let d=addDays(upto,-12);d<=upto;d=addDays(d,1)){
+    arrivals(b,p,d,true).forEach(a=>lots.push(a));
+    const l=clotureLine(b,p,d);
+    if(l){takeFrom(lots,l.quarts_jetes||0,d,'jete');takeFrom(lots,(l.quarts_vendus||0)+(l.quarts_casses||0)+(l.quarts_donnes||0),d,'vente')}
+  }
+  return lots;
+}
+const sumQ=ls=>ls.reduce((a,l)=>a+l.q,0);
+const usableOn=(lots,d)=>sumQ(lots.filter(l=>lastDay(l.d)>=d));
+
+/* ---------- Prévision des ventes (en parts) ---------- */
+function historyOf(b,p,before){
+  const days=cloturesAll.filter(c=>c.boutique_id===b&&c.jour<before).map(c=>c.jour).sort();
+  const veilleDay=days.length?days[days.length-1]:null;
+  const v=veilleDay?(clotureLine(b,p,veilleDay).quarts_vendus||0):null;
+  const wd=parseISO(before).getDay();
+  const same=days.filter(d=>parseISO(d).getDay()===wd&&d>=addDays(before,-35)).slice(-4).map(d=>clotureLine(b,p,d).quarts_vendus||0);
+  const avgSame=same.length?same.reduce((a,x)=>a+x,0)/same.length:null;
+  const base=avgSame!=null&&v!=null?0.6*avgSame+0.4*v:avgSame!=null?avgSame:v!=null?v:null;
+  return {veilleDay,veille:v,same:same.length,avgSame,base};
+}
+function calFor(b,d){const z=(boutiques.find(x=>x.id===b)||{}).zone_scolaire||'C';return calendrier.filter(c=>c.debut<=d&&c.fin>=d&&(c.zone==='toutes'||c.zone===z))}
+function meteoAdj(m){if(!m)return 0;let a=0;if(m.pluie>=5)a-=15;else if(m.pluie>=1)a-=5;if(m.tmax>=32)a-=10;return a}
+const meteoKey=b=>{const x=boutiques.find(y=>y.id===b)||{};return x.lat!=null?(Math.round(x.lat*10)/10)+','+(Math.round(x.lon*10)/10):null};
+const meteoTxt=m=>m?`${m.pluie>=1?'Pluie '+m.pluie.toFixed(1).replace('.',',')+' mm':'Sec'} · ${Math.round(m.tmin)}–${Math.round(m.tmax)} °C`:'Météo indisponible';
+async function loadMeteo(target){
+  const keys=[...new Set(boutiques.filter(b=>b.actif).map(b=>meteoKey(b.id)).filter(Boolean))].filter(k=>meteo[k+'@'+target]===undefined);
+  if(!keys.length)return;
+  await Promise.all(keys.map(async k=>{
+    const id=k+'@'+target;meteo[id]=null;
+    try{const [la,lo]=k.split(',');
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis&start_date=${target}&end_date=${target}`);
+      const j=await r.json();if(j&&j.daily&&j.daily.time&&j.daily.time.length)meteo[id]={tmax:j.daily.temperature_2m_max[0],tmin:j.daily.temperature_2m_min[0],pluie:j.daily.precipitation_sum[0]||0};
+    }catch(e){}
+  }));
+  if(route==='repartition')render();
+}
+const meteoOf=(b,target)=>{const k=meteoKey(b);return k?meteo[k+'@'+target]:null};
+// Stock utilisable le jour `target` : dernières données connues + envois prévus d'ici là − ventes estimées des jours non clôturés
+function stockForecast(b,p,target){
+  const closed=cloturesAll.filter(c=>c.boutique_id===b&&c.jour<target).map(c=>c.jour).sort();
+  const last=closed.length?closed[closed.length-1]:addDays(target,-1);
+  const lots=lotsAt(b,p,last);
+  for(let d=addDays(last,1);d<target;d=addDays(d,1)){
+    arrivals(b,p,d,false).forEach(a=>lots.push(a));
+    const h=historyOf(b,p,d);if(h.base)takeFrom(lots,Math.round(h.base),d,'vente');
+  }
+  return {usable:usableOn(lots,target),last};
+}
 
 /* ---------- Écrans d'authentification ---------- */
 function show(which){$('#auth').hidden=which!=='auth';$('#app').hidden=which!=='app'}
@@ -155,13 +229,16 @@ async function loadAll(){
     sb.from('boutiques').select('*').order('created_at'),
     sb.from('parfums').select('*').order('ordre'),
     sb.from('planning').select('*').gte('jour',d0).lte('jour',d6).order('jour').order('debut'),
-    sb.from('envois').select('*, envoi_lignes(*)').eq('jour',d0).order('created_at'),
-    sb.from('clotures').select('*, cloture_lignes(*)').eq('jour',d0)
+    sb.from('envois').select('*, envoi_lignes(*)').gte('jour',addDays(d0,-12)).lte('jour',addDays(d0,1)).order('created_at'),
+    sb.from('clotures').select('*, cloture_lignes(*)').gte('jour',addDays(d0,-35)).lte('jour',d0)
   ]);
+  const cal=await sb.from('calendrier').select('*').order('debut');calendrier=cal.data||[];
   if(p.error){toast(frErr(p.error));return}
   profiles=p.data||[];me=profiles.find(x=>x.id===user.id)||null;
-  boutiques=b.data||[];parfums=pf.data||[];planning=pl.data||[];envois=ev.data||[];clotures=cl.data||[];
-  if(pf.error&&/parfums/.test(pf.error.message||''))toast('Base pas à jour : lance etape2.sql dans Supabase.');
+  boutiques=b.data||[];parfums=pf.data||[];planning=pl.data||[];envoisAll=ev.data||[];cloturesAll=cl.data||[];
+  envois=envoisAll.filter(e=>e.jour===d0);clotures=cloturesAll.filter(c=>c.jour===d0);
+  if(pf.error)toast('Base pas à jour : lance etape2.sql dans Supabase.');
+  else if(cal.error)toast('Base pas à jour : lance etape2b.sql dans Supabase.');
   if(isResp(me)){const i=await sb.from('invitations').select('*').order('created_at',{ascending:false});invitations=i.data||[]}else invitations=[];
   loaded=true;render();
 }
@@ -169,7 +246,7 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -183,10 +260,10 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];loaded=false;locked=false;renderLock()}
+function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['accueil','tableau','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:'accueil'}
 window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;render();window.scrollTo({top:0})});
 
@@ -198,7 +275,7 @@ function render(){
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={accueil:homeView,tableau:dashView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
+  const V={accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView};
   main.innerHTML=V[route]();
 }
 
@@ -323,7 +400,7 @@ function envoisView(){
   const sigHTML=sig.length?sig.map(e=>{const by=prof(e.signale_par);return `<div class="envoi${e.urgent?' hot':''}">
       <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b><span class="meta"> · réassort signalé à ${timeOf(e.created_at)} par ${esc(displayName(by))}</span></span>${e.urgent?'<span class="badge b-bad">Urgent</span>':''}</div>
       ${e.note?`<span style="font-size:14px">« ${esc(e.note)} »</span>`:''}
-      <div class="qty">${sortLines(e.envoi_lignes).map(l=>{const p=parfum(l.parfum_id)||{};return `<label>${sw(p.couleur)}<span>${esc(p.nom)} <small style="color:var(--muted)">(demandé ${l.demande??l.quantite})</small></span><input type="number" min="0" inputmode="numeric" id="rv-${l.id}" value="${l.quantite}" aria-label="${esc(p.nom)}"></label>`}).join('')}</div>
+      <div class="qty">${sortLines(e.envoi_lignes).map(l=>{const p=parfum(l.parfum_id)||{};return `<label>${sw(p)}<span>${esc(p.nom)} <small style="color:var(--muted)">(demandé ${l.demande??l.quantite})</small></span><input type="number" min="0" inputmode="numeric" id="rv-${l.id}" value="${l.quantite}" aria-label="${esc(p.nom)}"></label>`}).join('')}</div>
       <div class="btnrow">${livreurSelect('rvl-'+e.id,null)}<button class="btn sm" type="button" data-act="rValider" data-id="${e.id}">Valider : labo + livreur</button><button class="btn danger sm" type="button" data-act="rRefuser" data-id="${e.id}">Refuser</button></div>
     </div>`}).join(''):'<p class="empty">Aucun réassort en attente.</p>';
   const flowHTML=flow.length?flow.map(e=>{const l=prof(e.livreur_id);return `<div class="envoi">
@@ -350,25 +427,112 @@ function envoisView(){
   </div>`;
 }
 
-/* --- Production du jour (labo + responsables) --- */
+/* --- Répartition de demain (responsables + chef pâtissier) --- */
+function repInit(target){
+  if(rep.target===target)return;
+  rep={target,adj:{},adjTouched:{},qty:{},inc:{},liv:{}};
+  const planned=planning.filter(p=>p.jour===target&&p.lieu==='boutique');
+  boutiques.filter(b=>b.actif).forEach(b=>{
+    const ex=envoisAll.find(e=>e.jour===target&&e.boutique_id===b.id&&e.type==='matin'&&e.statut!=='refuse');
+    rep.inc[b.id]=ex?true:(planned.length?planned.some(p=>p.boutique_id===b.id):true);
+    if(ex){rep.qty[b.id]={};(ex.envoi_lignes||[]).forEach(l=>rep.qty[b.id][l.parfum_id]=l.quantite);rep.liv[b.id]=ex.livreur_id||''}
+  });
+}
+function repAdj(b,target){
+  if(rep.adjTouched[b])return rep.adj[b];
+  return meteoAdj(meteoOf(b,target))+calFor(b,target).reduce((a,c)=>a+(c.ajustement||0),0);
+}
+function repRows(b,target){
+  const adj=repAdj(b,target);
+  return dispo().map(p=>{
+    const h=historyOf(b,p.id,target);
+    const st=stockForecast(b,p.id,target);
+    const demand=h.base!=null?Math.round(h.base*(1+adj/100)):null;
+    const need=demand!=null?Math.max(0,demand-st.usable):null;
+    const prop=need!=null?Math.ceil(need/PARTS):null;
+    return {p,h,st,demand,prop};
+  });
+}
+function repartitionView(){
+  const target=addDays(day,1);repInit(target);loadMeteo(target);
+  const shops=boutiques.filter(b=>b.actif);
+  const livs=profiles.filter(p=>p.actif&&p.role==='livreur');
+  const onTour=new Set(planning.filter(p=>p.jour===target&&p.lieu==='tournee').map(p=>p.user_id));
+  const defLiv=(livs.find(l=>onTour.has(l.id))||{}).id||'';
+  const anyPlan=planning.some(p=>p.jour===target&&p.lieu==='boutique');
+  const totals={};let grand=0;
+  const cards=shops.map(b=>{
+    const rows=repRows(b.id,target);const inc=rep.inc[b.id];
+    const ex=envoisAll.find(e=>e.jour===target&&e.boutique_id===b.id&&e.type==='matin'&&e.statut!=='refuse');
+    const locked=ex&&ex.statut!=='valide';
+    const q=rep.qty[b.id]||{};
+    let tot=0;rows.forEach(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);if(inc){totals[r.p.id]=(totals[r.p.id]||0)+v;tot+=v}});grand+=inc?tot:0;
+    const m=meteoOf(b.id,target),cal=calFor(b.id,target),adj=repAdj(b.id,target);
+    const vend=planning.filter(p=>p.jour===target&&p.lieu==='boutique'&&p.boutique_id===b.id).map(p=>displayName(prof(p.user_id)));
+    const noHist=rows.every(r=>r.h.base==null);
+    return `<section class="card${inc?'':' off'}" style="${inc?'':'opacity:.6'}">
+      <div class="envoi-h"><div><h2>${esc(b.nom)}</h2><span class="meta">${vend.length?'Vendeur : '+esc(vend.join(', ')):anyPlan?'Personne de planifié':'Planning de demain pas encore fait'}</span></div>
+        <label class="check" style="font-size:14px;font-weight:500"><input type="checkbox" data-rep="inc" data-b="${b.id}"${inc?' checked':''}${locked?' disabled':''}>Livrer demain</label></div>
+      <div class="chips"><span class="chip">${esc(meteoTxt(m))}</span>${cal.map(c=>`<span class="chip">${esc(c.libelle)}${c.ajustement?' · '+(c.ajustement>0?'+':'')+c.ajustement+' %':''}</span>`).join('')}
+        <label class="chip">Ajustement <input type="number" step="5" data-rep="adj" data-b="${b.id}" value="${adj}" style="width:62px;min-height:30px;border:1px solid var(--line2);border-radius:8px;text-align:center;font:inherit" aria-label="Ajustement en pourcentage"> %</label></div>
+      ${locked?`<p class="msg ok">Déjà parti au labo et marqué « ${esc(STATUT[ex.statut][0])} » : plus modifiable ici.</p>`:''}
+      ${noHist?'<p class="note">Pas encore de clôtures pour cette boutique : pas de proposition, saisis les quantités.</p>':''}
+      <div class="tbl-wrap"><table class="ptable" style="min-width:600px"><thead><tr><th>Parfum</th><th title="Parts vendues au dernier jour clôturé">Veille</th><th title="Moyenne des parts vendues le même jour de la semaine (4 dernières semaines)">Même jour</th><th title="Parts encore vendables demain">Stock demain</th><th title="Ventes prévues demain, en parts">Prévu</th><th>Proposé</th><th>À envoyer</th></tr></thead><tbody>
+      ${rows.map(r=>{const v=q[r.p.id]!=null?q[r.p.id]:(r.prop||0);return `<tr><td>${sw(r.p)} ${esc(r.p.nom)}</td><td class="num">${r.h.veille??'–'}</td><td class="num">${r.h.avgSame!=null?Math.round(r.h.avgSame)+' <small style="color:var(--muted)">('+r.h.same+' sem.)</small>':'–'}</td><td class="num">${r.st.usable} parts</td><td class="num">${r.demand??'–'}</td><td class="num">${r.prop!=null?r.prop+' fl.':'–'}</td><td><input type="number" min="0" inputmode="numeric" data-rep="qty" data-b="${b.id}" data-p="${r.p.id}" value="${v||''}" placeholder="0"${locked||!inc?' disabled':''} aria-label="${esc(r.p.nom)}, flans à envoyer"></td></tr>`}).join('')}
+      <tr class="total"><td>Total</td><td colspan="5"></td><td class="num">${tot} flans</td></tr></tbody></table></div>
+      <div class="btnrow"><label class="meta">Livreur <select class="inline-sel" data-rep="liv" data-b="${b.id}"${locked?' disabled':''}><option value="">Sans livreur</option>${livs.map(l=>`<option value="${l.id}"${(rep.liv[b.id]!=null?rep.liv[b.id]:defLiv)===l.id?' selected':''}>${esc(displayName(l))}${onTour.has(l.id)?' · en tournée':''}</option>`).join('')}</select></label>
+      ${ex?`<span class="badge ${STATUT[ex.statut][1]}">Envoyé au labo · ${esc(STATUT[ex.statut][0])}</span>`:''}</div>
+    </section>`}).join('');
+  const tIds=Object.keys(totals).filter(k=>totals[k]>0).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
+  return `<div class="page">
+  <div class="head"><div><h1>Répartition du ${esc(fmtDay(target))}</h1><p>Livraison du matin, préparée la veille par le labo. Quantités en flans entiers (4 parts).</p></div>${dayNav('Préparé le '+fmtDay(day))}</div>
+  <section class="card dark"><h2 style="color:var(--gold-l)">Total à produire : ${grand} flans</h2>
+    ${tIds.length?`<div class="chips">${tIds.map(id=>{const p=parfum(id)||{};return `<span class="chip" style="background:#2a2a2a;border-color:#3a3a3a;color:#FFF8EC">${sw(p)}${esc(p.nom)} <b>${totals[id]}</b></span>`}).join('')}</div>`:'<p class="sub">Aucune quantité pour l’instant.</p>'}
+    <div class="btnrow"><button class="btn" type="button" data-act="repSend" style="background:var(--gold-l);color:var(--ink)">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="repReset">Revenir aux propositions</button></div>
+    <p class="sub">Propositions = ventes prévues (60 % moyenne du même jour + 40 % veille, ajustées météo et calendrier) − stock encore vendable demain. Un flan se vend ${DUREE} jours après sa production.</p>
+  </section>
+  ${cards}
+  ${isResp(me)?calendrierSection():''}
+  </div>`;
+}
+function calendrierSection(){
+  const up=calendrier.filter(c=>c.fin>=todayISO()).slice(0,14);
+  return `<section class="card"><h2>Calendrier : vacances, fêtes, événements</h2>
+    <p class="sub">Chaque période ajoute son pourcentage aux propositions des boutiques concernées (zone C : Montpellier, Nîmes, Béziers ; zone B : Marseille).</p>
+    ${up.length?`<div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th>Période</th><th>Dates</th><th>Zone</th><th>Effet</th><th></th></tr></thead><tbody>${up.map(c=>`<tr><td><b>${esc(c.libelle)}</b> <span class="badge b-mute">${esc({vacances:'Vacances',ferie:'Férié',fete:'Fête',evenement:'Événement'}[c.type])}</span></td><td>${c.debut===c.fin?esc(fmtDay(c.debut)):esc(fmtDay(c.debut))+' → '+esc(fmtDay(c.fin))}</td><td>${c.zone==='toutes'?'Toutes':'Zone '+esc(c.zone)}</td><td><input type="number" step="5" data-act="calAdj" data-id="${c.id}" value="${c.ajustement}" style="width:64px;min-height:36px;border:1px solid var(--line2);border-radius:8px;text-align:center;font:inherit" aria-label="Effet en pourcentage"> %</td><td><button class="btn ghost sm" type="button" data-act="calDel" data-id="${c.id}">Retirer</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Rien de prévu.</p>'}
+    <form id="calForm" class="grid" style="gap:10px" novalidate>
+      <div class="row2"><label class="field">Libellé<input id="caLib" placeholder="Marché de Noël, braderie…"></label><label class="field">Type<select id="caType"><option value="evenement">Événement</option><option value="fete">Fête</option><option value="vacances">Vacances</option><option value="ferie">Férié</option></select></label></div>
+      <div class="row2"><label class="field">Début<input id="caDeb" type="date"></label><label class="field">Fin<input id="caFin" type="date"></label></div>
+      <div class="row2"><label class="field">Zone<select id="caZone"><option value="toutes">Toutes</option><option value="C">Zone C</option><option value="B">Zone B</option></select></label><label class="field">Effet (%)<input id="caAdj" type="number" step="5" value="10"></label></div>
+      <p class="msg err" id="caErr" hidden></p>
+      <button class="btn sm" type="submit">Ajouter au calendrier</button></form>
+  </section>`;
+}
+
+/* --- Production (labo + responsables) : aujourd'hui et livraison de demain matin --- */
 function productionView(){
-  const act=envois.filter(e=>['valide','pret','en_route','livre'].includes(e.statut));
+  const tmw=addDays(day,1);
+  const act=envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret','en_route','livre'].includes(e.statut));
   const todo=act.filter(e=>e.statut==='valide');
   const tot={},rest={};act.forEach(e=>(e.envoi_lignes||[]).forEach(l=>{tot[l.parfum_id]=(tot[l.parfum_id]||0)+l.quantite;if(e.statut==='valide')rest[l.parfum_id]=(rest[l.parfum_id]||0)+l.quantite}));
   const ids=Object.keys(tot).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
   const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
+  const card=e=>`<div class="envoi${e.type==='reassort'?' hot':''}">
+    <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> ${e.type==='reassort'?'<span class="badge b-bad">Réassort'+(e.urgent?' urgent':'')+'</span>':`<span class="badge b-mute">Livraison ${e.jour===day?'du matin':'de demain matin'}</span>`}</span><span class="meta">${lineTotal(e.envoi_lignes)} flans</span></div>
+    ${chipsOf(e.envoi_lignes)}${e.note?`<span class="meta">${esc(e.note)}</span>`:''}
+    <div class="btnrow"><button class="btn sm" type="button" data-act="pret" data-id="${e.id}">C’est prêt</button><span class="meta">${e.livreur_id?'Livreur : '+esc(displayName(prof(e.livreur_id))):'Livreur pas encore choisi'}</span></div></div>`;
+  const reas=todo.filter(e=>e.type==='reassort'),today=todo.filter(e=>e.type==='matin'&&e.jour===day),demain=todo.filter(e=>e.type==='matin'&&e.jour===tmw);
+  const grp=(t,l)=>l.length?`<div class="grid" style="gap:10px"><div class="meta" style="font-weight:700">${t}</div>${l.map(card).join('')}</div>`:'';
   return `<div class="page">
-  <div class="head"><div><h1>Production du jour</h1><p>${sum(rest)} flans encore à préparer · ${sum(tot)} au total</p></div>${dayNav()}</div>
+  <div class="head"><div><h1>Production</h1><p>${sum(rest)} flans encore à préparer · ${sum(tot)} au total (aujourd’hui et demain matin)</p></div>${dayNav()}</div>
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>À préparer <span class="badge ${todo.length?'b-info':'b-mute'}">${todo.length}</span></h2>
-      ${todo.length?todo.sort((a,b)=>(b.type==='reassort')-(a.type==='reassort')||(b.urgent-a.urgent)).map(e=>`<div class="envoi${e.type==='reassort'?' hot':''}">
-        <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> ${e.type==='reassort'?'<span class="badge b-bad">Réassort'+(e.urgent?' urgent':'')+'</span>':'<span class="badge b-mute">Livraison du matin</span>'}</span><span class="meta">${lineTotal(e.envoi_lignes)} flans</span></div>
-        ${chipsOf(e.envoi_lignes)}${e.note?`<span class="meta">${esc(e.note)}</span>`:''}
-        <div class="btnrow"><button class="btn sm" type="button" data-act="pret" data-id="${e.id}">C’est prêt</button><span class="meta">${e.livreur_id?'Livreur : '+esc(displayName(prof(e.livreur_id))):'Livreur pas encore choisi'}</span></div></div>`).join(''):'<p class="empty">Rien à préparer pour l’instant.</p>'}
+      ${todo.length?grp('Réassorts (urgent)',reas.sort((a,b)=>b.urgent-a.urgent))+grp('Livraison du matin · '+fmtDay(day),today)+grp('Livraison de demain matin · '+fmtDay(tmw),demain):'<p class="empty">Rien à préparer pour l’instant.</p>'}
+      ${me.role==='chef_patissier'||isResp(me)?'<a class="link" href="#repartition">Préparer la répartition de demain</a>':''}
     </section>
     <section class="card"><h2>Total par parfum</h2>
-      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Reste</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p.couleur)} ${esc(p.nom)}</td><td class="num"><b>${rest[id]||0}</b></td><td class="num">${tot[id]}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé ce jour.</p>'}
-      <p class="note">Quantités en flans entiers. Les envois déjà prêts restent comptés dans le total.</p>
+      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Reste</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${rest[id]||0}</b></td><td class="num">${tot[id]}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
+      <p class="note">En flans entiers. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
     </section>
   </div></div>`;
 }
@@ -381,18 +545,27 @@ function journeeView(){
   const mine=envois.filter(e=>e.boutique_id===B);
   const enRoute=mine.filter(e=>e.statut==='en_route');
   const others=mine.filter(e=>e.statut!=='en_route');
-  const recu=recuOf(B);
   const cl=clotures.find(c=>c.boutique_id===B);
   const clv={};(cl&&cl.cloture_lignes||[]).forEach(l=>clv[l.parfum_id]=l);
-  const list=parfums.filter(p=>p.disponible||recu[p.id]||clv[p.id]);
+  const prev=addDays(day,-1);
+  const rows=parfums.map(p=>{
+    const lots=lotsAt(B,p.id,prev);
+    const recu=sumQ(arrivals(B,p.id,day,true));
+    const debut=sumQ(lots);
+    const premier=sumQ(lots.filter(l=>lastDay(l.d)===day));
+    const perime=sumQ(lots.filter(l=>lastDay(l.d)<day));
+    return {p,debut,recu,premier,perime,v:clv[p.id]||{}};
+  }).filter(r=>r.p.disponible||r.debut||r.recu||clv[r.p.id]);
+  const urgent=rows.filter(r=>r.premier||r.perime);
   return `<div class="page">
   <div class="head"><div><h1>${esc(shopName(B))}</h1><p>Ma journée · ${esc(fmtDay(day))}${a.debut?' · '+hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):''}</p></div>${dayNav()}</div>
   ${aff.length>1?`<p class="note">Tu as plusieurs affectations ce jour : l’appli affiche la première (${esc(shopName(B))}).</p>`:''}
   ${enRoute.length?`<section class="card" style="border-color:var(--gold)"><h2>Livraison en route</h2>${enRoute.map(e=>`<div class="envoi"><div class="envoi-h"><b>${e.type==='reassort'?'Réassort':'Livraison du matin'}</b><span class="meta">${lineTotal(e.envoi_lignes)} flans · ${esc(displayName(prof(e.livreur_id)))}</span></div>${chipsOf(e.envoi_lignes)}<button class="btn" type="button" data-act="recu" data-id="${e.id}">J’ai bien reçu</button></div>`).join('')}</section>`:''}
+  ${urgent.length?`<section class="card" style="border-color:var(--bad)"><h2>À vendre en premier</h2><div class="chips">${urgent.map(r=>`${r.premier?`<span class="chip">${sw(r.p)}${esc(r.p.nom)} <b>${r.premier} parts</b> · dernier jour</span>`:''}${r.perime?`<span class="chip" style="border-color:var(--bad)">${sw(r.p)}${esc(r.p.nom)} <b>${r.perime} parts</b> · périmées, à jeter</span>`:''}`).join('')}</div><p class="note">Sers toujours les parts les plus anciennes d’abord. Un flan se vend ${DUREE} jours à partir de sa production.</p></section>`:''}
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>Signaler un réassort</h2>
       ${isToday?`<form id="reassortForm" class="grid" style="gap:12px" novalidate data-boutique="${B}">
-        <p class="sub">Indique ce qu’il te manque (en flans entiers). Un responsable valide, puis le labo prépare et le livreur t’apporte.</p>
+        <p class="sub">Indique ce qu’il te manque, en flans entiers (4 parts). Un responsable valide, puis le labo prépare et le livreur t’apporte.</p>
         ${qtyGrid('ra',{},dispo())}
         <label class="check"><input type="checkbox" id="raUrgent">C’est urgent (rupture en cours)</label>
         <label class="field">Message<input id="raNote" placeholder="Ex. : plus de vanille, gros rush"></label>
@@ -404,11 +577,14 @@ function journeeView(){
     </section>
   </div>
   <section class="card"><h2>Clôture de la journée ${cl?`<span class="badge b-good">Enregistrée à ${timeOf(cl.updated_at)}</span>`:''}</h2>
-    <p class="sub">Pour chaque parfum : parts (quarts) vendues, flans entiers vendus, parts restantes en fin de journée.</p>
+    <p class="sub">Tout en <b>parts</b>. Le reste est calculé et passe au lendemain.</p>
     <form id="clotureForm" data-boutique="${B}" novalidate>
-      <div class="tbl-wrap"><table class="ptable"><thead><tr><th>Parfum</th><th>Reçu</th><th>Quarts vendus</th><th>Entiers vendus</th><th>Quarts invendus</th></tr></thead><tbody>
-      ${list.map(p=>{const v=clv[p.id]||{};return `<tr><td>${sw(p.couleur)} ${esc(p.nom)}</td><td class="num">${recu[p.id]?recu[p.id]+' flans':'–'}</td><td><input type="number" min="0" inputmode="numeric" id="cq-${p.id}" value="${v.quarts_vendus||''}" placeholder="0" aria-label="${esc(p.nom)} quarts vendus"></td><td><input type="number" min="0" inputmode="numeric" id="ce-${p.id}" value="${v.entiers_vendus||''}" placeholder="0" aria-label="${esc(p.nom)} entiers vendus"></td><td><input type="number" min="0" inputmode="numeric" id="ci-${p.id}" value="${v.quarts_invendus||''}" placeholder="0" aria-label="${esc(p.nom)} quarts invendus"></td></tr>`}).join('')}
+      <div class="tbl-wrap"><table class="ptable" style="min-width:640px"><thead><tr><th>Parfum</th><th title="Parts en boutique au début de la journée">Début</th><th title="Parts reçues aujourd’hui">Reçu</th><th>Vendues</th><th title="Parts périmées jetées">Jetées</th><th>Cassées</th><th>Données</th><th>Reste</th></tr></thead><tbody>
+      ${rows.map(r=>{const v=r.v,inp=(k,lbl)=>`<td><input type="number" min="0" inputmode="numeric" id="c${k}-${r.p.id}" data-row="${r.p.id}" value="${v['quarts_'+lbl]||''}" placeholder="0" aria-label="${esc(r.p.nom)} ${lbl}"></td>`;
+        const reste=r.debut+r.recu-(v.quarts_vendus||0)-(v.quarts_jetes||0)-(v.quarts_casses||0)-(v.quarts_donnes||0);
+        return `<tr data-stock="${r.debut+r.recu}" data-pid="${r.p.id}"><td>${sw(r.p)} ${esc(r.p.nom)}</td><td class="num">${r.debut}</td><td class="num">${r.recu||'–'}</td>${inp('v','vendus')}${inp('j','jetes')}${inp('c','casses')}${inp('d','donnes')}<td class="num"><b id="cr-${r.p.id}" style="${reste<0?'color:var(--bad)':''}">${reste}</b></td></tr>`}).join('')}
       </tbody></table></div>
+      <p class="note" style="margin-top:8px">Un reste négatif veut dire que le stock de l’appli ne correspond pas à la vitrine : signale-le dans la remarque.</p>
       <label class="field" style="margin-top:12px">Remarque<input id="clNote" value="${esc(cl&&cl.note||'')}" placeholder="Météo, affluence, incident…"></label>
       <p class="msg err" id="clErr" hidden style="margin-top:10px"></p>
       <div class="btnrow" style="margin-top:12px"><button class="btn" type="submit">${cl?'Mettre à jour la clôture':'Enregistrer la clôture'}</button></div>
@@ -435,22 +611,23 @@ function tourneeView(){
 function ventesView(){
   const shops=boutiques.filter(b=>b.actif);
   const rows=shops.map(b=>{const c=clotures.find(x=>x.boutique_id===b.id);const ls=c?c.cloture_lignes||[]:[];
-    const q=ls.reduce((a,l)=>a+(l.quarts_vendus||0),0),e=ls.reduce((a,l)=>a+(l.entiers_vendus||0),0),i=ls.reduce((a,l)=>a+(l.quarts_invendus||0),0);
-    const recu=Object.values(recuOf(b.id)).reduce((a,v)=>a+v,0);
+    const v=ls.reduce((a,l)=>a+(l.quarts_vendus||0),0),j=ls.reduce((a,l)=>a+(l.quarts_jetes||0),0),k=ls.reduce((a,l)=>a+(l.quarts_casses||0),0),d=ls.reduce((a,l)=>a+(l.quarts_donnes||0),0);
+    const reste=c?parfums.reduce((a,p)=>a+sumQ(lotsAt(b.id,p.id,day)),0):null;
     const vend=planning.filter(p=>p.jour===day&&p.lieu==='boutique'&&p.boutique_id===b.id).map(p=>displayName(prof(p.user_id)));
-    return {b,c,q,e,i,recu,ca:c?caOf(c):0,taux:recu?Math.round(i/(recu*4)*1000)/10:null,vend};});
-  const T=rows.reduce((a,r)=>({ca:a.ca+r.ca,q:a.q+r.q,e:a.e+r.e,i:a.i+r.i,recu:a.recu+r.recu}),{ca:0,q:0,e:0,i:0,recu:0});
+    return {b,c,v,j,k,d,reste,ca:c?caOf(c):0,vend};});
+  const T=rows.reduce((a,r)=>({ca:a.ca+r.ca,v:a.v+r.v,j:a.j+r.j,k:a.k+r.k,d:a.d+r.d,reste:a.reste+(r.reste||0)}),{ca:0,v:0,j:0,k:0,d:0,reste:0});
+  const pertes=T.j+T.k+T.d;
   return `<div class="page">
-  <div class="head"><div><h1>Ventes du jour</h1><p>${rows.filter(r=>r.c).length} clôture${rows.filter(r=>r.c).length>1?'s':''} sur ${rows.filter(r=>r.vend.length||r.c).length||shops.length} boutique${shops.length>1?'s':''} ouvertes</p></div>${dayNav()}</div>
+  <div class="head"><div><h1>Ventes du jour</h1><p>${rows.filter(r=>r.c).length} clôture${rows.filter(r=>r.c).length>1?'s':''} reçue${rows.filter(r=>r.c).length>1?'s':''} · tout en parts</p></div>${dayNav()}</div>
   <section class="grid g4">
-    <div class="card kpi"><span class="lbl">Chiffre d’affaires</span><span class="val num">${eur(T.ca)}</span><span class="hint">calculé avec les prix des parfums</span></div>
-    <div class="card kpi"><span class="lbl">Quarts vendus</span><span class="val num">${T.q}</span><span class="hint">+ ${T.e} flan${T.e>1?'s':''} entier${T.e>1?'s':''}</span></div>
-    <div class="card kpi"><span class="lbl">Quarts invendus</span><span class="val num">${T.i}</span><span class="hint">${T.recu?Math.round(T.i/(T.recu*4)*1000)/10+' % du reçu':'—'}</span></div>
-    <div class="card kpi"><span class="lbl">Flans livrés</span><span class="val num">${T.recu}</span><span class="hint">réceptions confirmées</span></div>
+    <div class="card kpi"><span class="lbl">Chiffre d’affaires</span><span class="val num">${eur(T.ca)}</span><span class="hint">parts × prix du quart</span></div>
+    <div class="card kpi"><span class="lbl">Parts vendues</span><span class="val num">${T.v}</span><span class="hint">soit ${Math.round(T.v/PARTS*10)/10} flans</span></div>
+    <div class="card kpi"><span class="lbl">Pertes</span><span class="val num">${pertes}</span><span class="hint">${T.j} jetées · ${T.k} cassées · ${T.d} données</span></div>
+    <div class="card kpi"><span class="lbl">Reste en boutiques</span><span class="val num">${T.reste}</span><span class="hint">parts, passent à demain</span></div>
   </section>
-  <section class="card"><h2>Par point de vente</h2><div class="tbl-wrap"><table><thead><tr><th>Point de vente</th><th>Vendeur</th><th>CA</th><th>Quarts</th><th>Entiers</th><th>Invendus</th><th>Taux</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td><b>${esc(r.b.nom)}</b></td><td>${r.vend.length?esc(r.vend.join(', ')):'<span class="meta" style="color:var(--muted)">—</span>'}</td><td class="num">${r.c?eur(r.ca):'<span class="badge '+(r.vend.length?'b-bad':'b-mute')+'">'+(r.vend.length?'Pas clôturé':'Fermé ?')+'</span>'}</td><td class="num">${r.c?r.q:''}</td><td class="num">${r.c?r.e:''}</td><td class="num">${r.c?r.i:''}</td><td class="num">${r.taux!=null&&r.c?r.taux+' %':''}</td></tr>`).join('')}
-    <tr class="total"><td>Total</td><td></td><td class="num">${eur(T.ca)}</td><td class="num">${T.q}</td><td class="num">${T.e}</td><td class="num">${T.i}</td><td></td></tr>
+  <section class="card"><h2>Par point de vente</h2><div class="tbl-wrap"><table><thead><tr><th>Point de vente</th><th>Vendeur</th><th>CA</th><th>Vendues</th><th>Jetées</th><th>Cassées</th><th>Données</th><th>Reste</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><b>${esc(r.b.nom)}</b></td><td>${r.vend.length?esc(r.vend.join(', ')):'<span style="color:var(--muted)">—</span>'}</td><td class="num">${r.c?eur(r.ca):'<span class="badge '+(r.vend.length?'b-bad':'b-mute')+'">'+(r.vend.length?'Pas clôturé':'Fermé ?')+'</span>'}</td><td class="num">${r.c?r.v:''}</td><td class="num">${r.c?r.j:''}</td><td class="num">${r.c?r.k:''}</td><td class="num">${r.c?r.d:''}</td><td class="num">${r.reste!=null?r.reste:''}</td></tr>`).join('')}
+    <tr class="total"><td>Total</td><td></td><td class="num">${eur(T.ca)}</td><td class="num">${T.v}</td><td class="num">${T.j}</td><td class="num">${T.k}</td><td class="num">${T.d}</td><td class="num">${T.reste}</td></tr>
   </tbody></table></div></section>
   ${clotures.filter(c=>c.note).length?`<section class="card"><h2>Remarques des vendeurs</h2>${clotures.filter(c=>c.note).map(c=>`<p style="margin:0;font-size:14px"><b>${esc(shopName(c.boutique_id))}</b> : ${esc(c.note)}</p>`).join('')}</section>`:''}
   </div>`;
@@ -461,7 +638,8 @@ function parfumForm(p){
   p=p||{nom:'',prix_quart:8,prix_entier:'',couleur:'#C9A24A',disponible:true};
   return `<form class="grid" style="gap:10px" data-parfumform="${p.id||'new'}" novalidate>
     <label class="field">Nom<input name="nom" value="${esc(p.nom)}"></label>
-    <div class="row2"><label class="field">Prix du quart (€)<input name="prix_quart" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_quart}"></label><label class="field">Prix de l’entier (€)<input name="prix_entier" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_entier??''}" placeholder="À définir"></label></div>
+    <div class="row2"><label class="field">Prix du quart (€)<input name="prix_quart" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_quart}"></label><label class="field">Prix de l’entier, commande (€)<input name="prix_entier" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_entier??''}" placeholder="À définir"></label></div>
+    <label class="field">Photo<select name="photo"><option value="">Aucune (couleur)</option>${PHOTOS.map(f=>`<option value="${f}"${p.photo===f?' selected':''}>${esc(f.replace('photos/','').replace('.jpg','').replace(/-/g,' '))}</option>`).join('')}</select></label>
     <div class="row2"><label class="field">Couleur<input name="couleur" type="color" value="${esc(p.couleur)}" style="padding:4px"></label><label class="field">Statut<select name="disponible"><option value="1"${p.disponible?' selected':''}>En vente</option><option value="0"${p.disponible?'':' selected'}>Pas en vente</option></select></label></div>
     <p class="msg err" hidden></p>
     <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="cancelParfum">Annuler</button></div></form>`;
@@ -471,12 +649,12 @@ function parfumsView(){
   return `<div class="page">
   <div class="head"><div><h1>Parfums</h1><p>${on} en vente · ${parfums.length-on} pas en vente</p></div>${ui.addParfum?'':'<button class="btn sm" type="button" data-act="addParfum">+ Ajouter un parfum</button>'}</div>
   ${ui.addParfum?`<section class="card"><h2>Nouveau parfum</h2>${parfumForm(null)}</section>`:''}
-  <div class="parfums">${parfums.map(p=>ui.editParfum===p.id?`<div class="parfum"><div class="bandeau" style="background:${esc(p.couleur)}"></div><div class="in">${parfumForm(p)}</div></div>`:`<div class="parfum${p.disponible?'':' off'}"><div class="bandeau" style="background:${esc(p.couleur)}"></div><div class="in">
+  <div class="parfums">${parfums.map(p=>ui.editParfum===p.id?`<div class="parfum"><div class="bandeau" style="background:${esc(p.couleur)}"></div><div class="in">${parfumForm(p)}</div></div>`:`<div class="parfum${p.disponible?'':' off'}">${p.photo?`<img class="pphoto" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`:`<div class="bandeau" style="background:${esc(p.couleur)}"></div>`}<div class="in">
     <div class="envoi-h"><b>${esc(p.nom)}</b><span class="badge ${p.disponible?'b-good':'b-mute'}">${p.disponible?'En vente':'Pas en vente'}</span></div>
     <span class="meta">Quart ${eur(p.prix_quart)} · entier ${p.prix_entier!=null?eur(p.prix_entier):'<span class="badge b-gold">à définir</span>'}</span>
     <div class="btnrow" style="margin-top:auto"><button class="btn ghost sm" type="button" data-act="editParfum" data-id="${p.id}">Modifier</button><button class="btn ghost sm" type="button" data-act="toggleParfum" data-id="${p.id}">${p.disponible?'Retirer de la vente':'Remettre en vente'}</button></div>
   </div></div>`).join('')}</div>
-  <p class="note">Seuls les parfums « en vente » apparaissent dans les réassorts et les envois. Le prix de l’entier « à définir » est compté à 4 quarts dans le chiffre d’affaires.</p></div>`;
+  <p class="note">Seuls les parfums « en vente » apparaissent dans la répartition, les réassorts et les envois. En boutique, la vente se fait à la part (prix du quart) ; le prix de l’entier sert aux commandes retirées à Saint-Lazare.</p></div>`;
 }
 
 /* --- Équipe --- */
@@ -617,6 +795,9 @@ document.addEventListener('click',async ev=>{
     case 'pret':return act(()=>sb.from('envois').update({statut:'pret'}).eq('id',id),'Marqué prêt : le livreur est prévenu');
     case 'parti':return act(()=>sb.from('envois').update({statut:'en_route'}).eq('id',id),'Bonne route !');
     case 'recu':return act(()=>sb.from('envois').update({statut:'livre'}).eq('id',id),'Réception confirmée');
+    case 'calDel':if(!armed(t))return;rep.target=null;return act(()=>sb.from('calendrier').delete().eq('id',id),'Retiré du calendrier');
+    case 'repReset':rep.target=null;return render();
+    case 'repSend':return repSend(t);
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
     case 'pinOff':return startPinFlow('disable');
@@ -624,11 +805,26 @@ document.addEventListener('click',async ev=>{
   }
 });
 document.addEventListener('change',ev=>{
+  const r=ev.target.closest('[data-rep]');
+  if(r){const b=r.dataset.b,k=r.dataset.rep;
+    if(k==='inc'){rep.inc[b]=r.checked;return render()}
+    if(k==='liv'){rep.liv[b]=r.value;return}
+    if(k==='adj'){rep.adj[b]=parseInt(r.value,10)||0;rep.adjTouched[b]=true;const q=rep.qty[b];if(q)Object.keys(q).forEach(p=>{if(q[p+'_auto'])delete q[p]});return render()}
+    if(k==='qty'){rep.qty[b]=rep.qty[b]||{};rep.qty[b][r.dataset.p]=int(r.value);return render()}
+  }
+  const ca=ev.target.closest('input[data-act="calAdj"]');
+  if(ca){act(()=>sb.from('calendrier').update({ajustement:parseInt(ca.value,10)||0}).eq('id',ca.dataset.id),'Effet mis à jour');rep.target=null;return}
   const s=ev.target.closest('select[data-act]');if(!s)return;
   const id=s.dataset.id,a=s.dataset.act;
   if(a==='setRole')act(()=>sb.from('profiles').update({role:s.value}).eq('id',id),'Rôle mis à jour');
   if(a==='setStatut')act(()=>sb.from('envois').update({statut:s.value}).eq('id',id),'Statut mis à jour');
   if(a==='setLivreur')act(()=>sb.from('envois').update({livreur_id:s.value||null}).eq('id',id),'Livreur mis à jour');
+});
+document.addEventListener('input',ev=>{
+  const i=ev.target.closest('#clotureForm input[data-row]');if(!i)return;
+  const pid=i.dataset.row,tr=i.closest('tr');const st=+tr.dataset.stock;
+  const used=['v','j','c','d'].reduce((a,k)=>a+int(($('#c'+k+'-'+pid)||{}).value),0);
+  const out=$('#cr-'+pid);if(out){out.textContent=st-used;out.style.color=st-used<0?'var(--bad)':''}
 });
 document.addEventListener('submit',async ev=>{
   const f=ev.target;ev.preventDefault();
@@ -677,15 +873,23 @@ document.addEventListener('submit',async ev=>{
   }
   if(f.id==='clotureForm'){
     const B=f.dataset.boutique;
-    const ids=parfums.map(p=>p.id).filter(pid=>document.getElementById('cq-'+pid));
+    const ids=parfums.map(p=>p.id).filter(pid=>document.getElementById('cv-'+pid));
     const old=clotures.find(c=>c.boutique_id===B);const oldIds=new Set((old&&old.cloture_lignes||[]).map(l=>l.parfum_id));
-    const lines=ids.map(pid=>({parfum_id:pid,quarts_vendus:int($('#cq-'+pid).value),entiers_vendus:int($('#ce-'+pid).value),quarts_invendus:int($('#ci-'+pid).value)})).filter(l=>l.quarts_vendus||l.entiers_vendus||l.quarts_invendus||oldIds.has(l.parfum_id));
+    const lines=ids.map(pid=>({parfum_id:pid,quarts_vendus:int($('#cv-'+pid).value),quarts_jetes:int($('#cj-'+pid).value),quarts_casses:int($('#cc-'+pid).value),quarts_donnes:int($('#cd-'+pid).value)})).filter(l=>l.quarts_vendus||l.quarts_jetes||l.quarts_casses||l.quarts_donnes||oldIds.has(l.parfum_id));
     if(!lines.length)return fail('#clErr','Remplis au moins une ligne.');
     const {data,error}=await sb.from('clotures').upsert({jour:day,boutique_id:B,vendeur_id:me.id,note:$('#clNote').value.trim()||null,updated_at:new Date().toISOString()},{onConflict:'jour,boutique_id'}).select('id').single();
     if(error)return fail('#clErr',frErr(error));
     const r=await sb.from('cloture_lignes').upsert(lines.map(l=>Object.assign({cloture_id:data.id},l)),{onConflict:'cloture_id,parfum_id'});
     if(r.error)return fail('#clErr',frErr(r.error));
     toast('Clôture enregistrée');reload();return;
+  }
+  if(f.id==='calForm'){
+    const row={libelle:$('#caLib').value.trim(),type:$('#caType').value,debut:$('#caDeb').value,fin:$('#caFin').value||$('#caDeb').value,zone:$('#caZone').value,ajustement:parseInt($('#caAdj').value,10)||0};
+    if(!row.libelle)return fail('#caErr','Donne un libellé.');
+    if(!row.debut)return fail('#caErr','Choisis la date de début.');
+    if(row.fin<row.debut)return fail('#caErr','La fin doit être après le début.');
+    const {error}=await sb.from('calendrier').insert(row);if(error)return fail('#caErr',frErr(error));
+    rep.target=null;toast('Ajouté au calendrier');reload();return;
   }
   if(f.dataset.shopform){
     const d=Object.fromEntries(new FormData(f));const err=f.querySelector('.msg');
@@ -702,7 +906,7 @@ document.addEventListener('submit',async ev=>{
     const pq=parseFloat(String(d.prix_quart).replace(',','.'));if(!(pq>=0))return fail(err,'Prix du quart invalide.');
     const pe=String(d.prix_entier).trim()===''?null:parseFloat(String(d.prix_entier).replace(',','.'));
     const isNew=f.dataset.parfumform==='new';
-    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1'};
+    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1',photo:d.photo||null};
     if(isNew)row.ordre=(Math.max(0,...parfums.map(p=>p.ordre||0))+1);
     const {error}=isNew?await sb.from('parfums').insert(row):await sb.from('parfums').update(row).eq('id',f.dataset.parfumform);
     if(error)return fail(err,frErr(error));
@@ -710,6 +914,31 @@ document.addEventListener('submit',async ev=>{
   }
   if(btn)btn.disabled=false;
 });
+
+async function repSend(btn){
+  const target=rep.target;if(!target)return;
+  const work=[];
+  for(const b of boutiques.filter(x=>x.actif)){
+    const ex=envoisAll.find(e=>e.jour===target&&e.boutique_id===b.id&&e.type==='matin'&&e.statut!=='refuse');
+    if(ex&&ex.statut!=='valide')continue;
+    const rows=repRows(b.id,target),q=rep.qty[b.id]||{};
+    const lines=rep.inc[b.id]?rows.map(r=>({parfum_id:r.p.id,quantite:q[r.p.id]!=null?q[r.p.id]:(r.prop||0)})).filter(l=>l.quantite>0):[];
+    const liv=(rep.liv[b.id]!=null?rep.liv[b.id]:(document.querySelector(`select[data-rep="liv"][data-b="${b.id}"]`)||{}).value)||null;
+    work.push({b,ex,lines,liv});
+  }
+  if(!work.some(w=>w.lines.length||w.ex))return toast('Aucune quantité à envoyer');
+  btn.disabled=true;let n=0;
+  try{
+    for(const w of work){
+      if(!w.lines.length){if(w.ex){const r=await sb.from('envois').delete().eq('id',w.ex.id);if(r.error)throw r.error}continue}
+      let id=w.ex&&w.ex.id;
+      if(id){let r=await sb.from('envois').update({livreur_id:w.liv}).eq('id',id);if(r.error)throw r.error;r=await sb.from('envoi_lignes').delete().eq('envoi_id',id);if(r.error)throw r.error}
+      else{const r=await sb.from('envois').insert({jour:target,boutique_id:w.b.id,type:'matin',statut:'valide',livreur_id:w.liv}).select('id').single();if(r.error)throw r.error;id=r.data.id}
+      const r=await sb.from('envoi_lignes').insert(w.lines.map(l=>({envoi_id:id,parfum_id:l.parfum_id,quantite:l.quantite})));if(r.error)throw r.error;n++;
+    }
+    toast(n+' livraison'+(n>1?'s':'')+' envoyée'+(n>1?'s':'')+' au labo');rep.target=null;reload();
+  }catch(e){toast(frErr(e))}finally{btn.disabled=false}
+}
 
 async function submitAuth(){
   const email=$('#aEmail').value.trim(),pw=$('#aPw').value,err=$('#authErr'),ok=$('#authOk');
