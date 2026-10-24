@@ -58,11 +58,11 @@ const CAN={
   pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne',
   commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client',
   clients:()=>isResp(me), contacts:()=>isResp(me), demandes:()=>isResp(me), cm:()=>isResp(me)||me.role==='cm',
-  maison:()=>me.role==='client', nosparfums:()=>me.role==='client', histoire:()=>me.role==='client', infos:()=>me.role==='client', ensemble:()=>me.role==='client'
+  maison:()=>me.role==='client', nosparfums:()=>me.role==='client', histoire:()=>me.role==='client', infos:()=>me.role==='client', ensemble:()=>me.role==='client', allergenes:()=>me.role==='client'
 };
-const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','ensemble','profil'];
+const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','allergenes','ensemble','profil'];
 function navItems(){
-  if(me.role==='client')return [['maison','Accueil'],['nosparfums','Nos parfums'],['commander','Commander'],['mescommandes','Mes commandes'],['histoire','Notre histoire'],['infos','Infos pratiques'],['ensemble','Travaillons ensemble'],['profil','Mon profil']];
+  if(me.role==='client')return [['maison','Accueil'],['nosparfums','Nos parfums'],['commander','Commander'],['mescommandes','Mes commandes'],['histoire','Notre histoire'],['infos','Infos pratiques'],['allergenes','Allergènes'],['ensemble','Travaillons ensemble'],['profil','Mon profil']];
   if(me.role==='cm')return [['accueil','Accueil'],['pointage','Mes heures'],['cm','Réseaux sociaux'],['planning','Mon planning'],['agenda','Agenda']];
   if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['demandes','Demandes'],['cm','Réseaux sociaux'],['clients','Clients'],['contacts','Contacts'],['equipe','Équipe'],['boutiques','Points de vente']]);
   if(me.role==='chef_patissier')return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning'],['agenda','Agenda']];
@@ -79,7 +79,7 @@ const POLES=[
   {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions','#labo')]},
   {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda')]},
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies'),T('Contacts','Équipe, fournisseurs, clients pro','#contacts')]},
-  {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients'),T('Réseau de franchises','Chiffres consolidés',null,7)]}
+  {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients')]}
 ];
 const LABO_TILES=[T('Production','Envois à préparer, réassorts','#production',null,'labo'),T('Mon planning','Mes horaires de la semaine','#planning'),T('Lots de production','Étapes, cuisson, refroidissement','#labo'),T('Températures et réceptions','Relevés HACCP','#labo')];
 const PT_TILE=T('Mes heures','Mes pointages de la semaine (pointage sur la borne)','#pointage');
@@ -133,14 +133,14 @@ function setOffline(){$('#offline').hidden=navigator.onLine}
 window.addEventListener('online',()=>{setOffline();if(user)loadAll()});
 window.addEventListener('offline',setOffline);
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Message copié')}catch(e){toast('Sélectionne le texte et copie-le')}}
-const PHOTOS=["photos/cacahuete.jpg", "photos/coco.jpg", "photos/flankie-cookie.jpg", "photos/flankie-pecan.jpg", "photos/flankie-pistache.jpg", "photos/fraise-basilic.jpg", "photos/framboise.jpg", "photos/frangipane.jpg", "photos/mangue.jpg", "photos/marbre.jpg", "photos/marron.jpg", "photos/myrtille.jpg", "photos/noisette.jpg", "photos/passion.jpg", "photos/pecan.jpg", "photos/pistache.jpg", "photos/pur-chocolat-ghana-80.jpg", "photos/sesame.jpg", "photos/speculos.jpg", "photos/vanille.jpg"];
+const PHOTOS=["photos/cacahuete.jpg", "photos/coco.jpg", "photos/flankie-cookie.jpg", "photos/flankie-pecan.jpg", "photos/flankie-pistache.jpg", "photos/fraise-basilic.jpg", "photos/framboise.jpg", "photos/frangipane.jpg", "photos/mangue.jpg", "photos/marbre.jpg", "photos/marron.jpg", "photos/myrtille.jpg", "photos/noisette.jpg", "photos/passion.jpg", "photos/pecan.jpg", "photos/pistache.jpg", "photos/pur-chocolat-ghana-80.jpg", "photos/sesame.jpg", "photos/speculos.jpg", "photos/vanille.jpg", "photos/abricot-romarin.jpg", "photos/amande.jpg", "photos/brownie-chocolat.jpg", "photos/cafe.jpg", "photos/cajou.jpg", "photos/cannelle.jpg", "photos/caramel-beurre-sale.jpg", "photos/celebration.jpg", "photos/cheesecake.jpg", "photos/choco-banane.jpg", "photos/choco-caramel.jpg", "photos/chocolat.jpg", "photos/citron-meringue.jpg", "photos/coco-chocolat.jpg", "photos/crousty-noisette.jpg", "photos/flankie-chocolat.jpg", "photos/flankie-noisette.jpg", "photos/fraise.jpg", "photos/poire-chocolat.jpg", "photos/tatin.jpg", "photos/tiramisu.jpg"].sort();
 const sw=x=>{if(x&&typeof x==='object'){if(x.photo)return `<img class="sw ph" src="${esc(x.photo)}" alt="" loading="lazy">`;x=x.couleur}return `<span class="sw" style="background:${esc(x||'#ccc')}"></span>`};
 function chipsOf(lines,key){key=key||'quantite';const ls=sortLines(lines).filter(l=>(l[key]||0)>0);return ls.length?`<div class="chips">${ls.map(l=>{const p=parfum(l.parfum_id)||{};return `<span class="chip">${sw(p)}${esc(p.nom||'?')} <b>${l[key]}</b></span>`}).join('')}</div>`:'<span class="meta">Aucune quantité</span>'}
 function stepsOf(e){if(e.statut==='signale'||e.statut==='refuse')return `<span class="badge ${STATUT[e.statut][1]}">${STATUT[e.statut][0]}</span>`;const i=STEPS.indexOf(e.statut);return `<div class="steps">${STEPS.map((s,k)=>`<span class="${k<i?'done':k===i?'now':''}">${STEP_LBL[s]}</span>`).join('')}</div>`}
 function dayNav(title){return `<div class="daynav" role="group" aria-label="Choisir le jour"><button class="iconbtn" type="button" data-act="day" data-d="-1" aria-label="Jour précédent">‹</button><b>${esc(title||fmtDay(day))}</b><button class="iconbtn" type="button" data-act="day" data-d="1" aria-label="Jour suivant">›</button>${day!==todayISO()?'<button class="btn ghost sm" type="button" data-act="day" data-d="0">Aujourd’hui</button>':''}</div>`}
 function qtyGrid(prefix,values,list){values=values||{};return `<div class="qty">${list.map(p=>`<label title="${esc(p.nom)}">${sw(p)}<span>${esc(p.nom)}</span><input type="number" min="0" step="1" inputmode="numeric" id="${prefix}-${p.id}" value="${values[p.id]||''}" placeholder="0" aria-label="${esc(p.nom)}"></label>`).join('')}</div>`}
 function readGrid(prefix,list){const out=[];list.forEach(p=>{const el=document.getElementById(prefix+'-'+p.id);const q=el?int(el.value):0;if(q)out.push({parfum_id:p.id,q})});return out}
-const dispo=()=>parfums.filter(p=>p.disponible);
+const dispo=()=>parfums.filter(p=>p.disponible&&p.vente_quart!==false);
 const counts=()=>({
   signale:envois.filter(e=>e.statut==='signale').length,
   labo:envoisAll.filter(e=>e.statut==='valide'&&(e.jour===todayISO()||e.jour===addDays(todayISO(),1))).length,
@@ -237,7 +237,7 @@ function setAuthMode(m,okMsg){
   $('#authTitle').textContent=C[0];$('#authLead').textContent=C[1];$('#authBtn').textContent=C[2];
   $('#nameRow').hidden=!signup;$('#charteRow').hidden=!signup;$('#telRow').hidden=m!=='client';
   $('#pwRow').hidden=m==='reset';$('#pwHint').hidden=!signup;$('#pwHint').textContent=m==='client'?'8 caractères minimum.':'10 caractères minimum.';
-  $('#charteTxt').textContent=m==='client'?'J’accepte que mes nom, prénom, e-mail et téléphone soient utilisés par le Comptoir du Flan pour gérer mes commandes. Je peux supprimer mon compte à tout moment.':'J’accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par le Comptoir du Flan pour l’organisation du travail.';
+  $('#charteTxt').textContent=m==='client'?'J’accepte que mes nom, prénom, e-mail et téléphone soient utilisés par Le Comptoir du Flan pour gérer mes commandes. Je peux supprimer mon compte à tout moment.':'J’accepte que mes nom, prénom, adresse e-mail et rôle soient utilisés par Le Comptoir du Flan pour l’organisation du travail.';
   $('#aPw').autocomplete=signup?'new-password':'current-password';
   $('#toActivate').textContent=m==='login'?'Équipe : première connexion ? Activer mon compte':'J’ai déjà un compte';
   $('#toReset').hidden=m!=='login';$('#clientCta').hidden=m==='client';$('#toEnsemble').hidden=m!=='login';
@@ -245,7 +245,7 @@ function setAuthMode(m,okMsg){
   $('#authSub').textContent=m==='client'?'Commandez vos flans entiers en ligne, retrait en boutique, paiement sur place.':'L’outil interne de l’équipe : production, ventes, stocks et prévisions.';
   $('#authErr').hidden=true;const ok=$('#authOk');ok.textContent=okMsg||'';ok.hidden=!okMsg;
 }
-function showAuth(okMsg){show('auth');$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode(!okMsg&&location.hash==='#client'?'client':!okMsg&&location.hash==='#ensemble'?'ensemble':'login',okMsg)}
+function showAuth(okMsg){show('auth');if(sb)loadAuthSocial();$('#authForm').hidden=false;$('#newPwForm').hidden=true;setAuthMode(!okMsg&&location.hash==='#client'?'client':!okMsg&&location.hash==='#ensemble'?'ensemble':'login',okMsg)}
 
 /* ---------- Données ---------- */
 async function loadAll(){
@@ -288,6 +288,7 @@ async function loadAll(){
     ingredients=ig.data||[];recettes=rc.data||[];reglages={};(rg.data||[]).forEach(r=>reglages[r.cle]=r.valeur);
   }
   if(isResp(me)){const [ct,dm]=await Promise.all([sb.from('contacts').select('*').order('nom'),sb.from('demandes').select('*').order('created_at',{ascending:false}).limit(500)]);contacts=ct.data||[];demandes=dm.data||[];if(ct.error&&['contacts','demandes'].includes(route))toast('Base pas à jour : lance etape6.sql dans Supabase.');if(route==='clients'&&clientsData&&!clientsData.loading)loadClients()}else{contacts=[];demandes=[]}
+  if(me&&me.role!=='borne'){const rz=await sb.from('reseaux').select('*').order('ordre');reseauxList=rz.data||[]}
   if(me&&(isResp(me)||me.role==='cm')){const [pb,rs]=await Promise.all([sb.from('publications').select('*').gte('jour',addDays(todayISO(),-120)).lte('jour',addDays(todayISO(),240)).order('jour'),sb.from('reseaux_stats').select('*').gte('mois',addDays(todayISO(),-400))]);publications=pb.data||[];reseauxStats=rs.data||[];if(pb.error&&route==='cm')toast('Base pas à jour : lance etape6.sql dans Supabase.')}else{publications=[];reseauxStats=[]}
   if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
   loaded=true;render();refreshLastMod();if(route==='tableau'&&isResp(me))loadJournal();
@@ -296,7 +297,7 @@ let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
 function subscribe(){
   if(channel)sb.removeChannel(channel);
   channel=sb.channel('cdf');
-  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres','contacts','demandes','publications','reseaux_stats'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
+  ['profiles','boutiques','invitations','parfums','planning','envois','envoi_lignes','clotures','cloture_lignes','calendrier','lots','releves','receptions','equipements','ingredients','recettes','reglages','ecritures','pointages','evenements','heures_validations','commandes','commande_lignes','parametres','contacts','demandes','publications','reseaux_stats','reseaux'].forEach(t=>channel.on('postgres_changes',{event:'*',schema:'public',table:t},reload));
   channel.subscribe();
 }
 
@@ -313,13 +314,13 @@ async function startApp(session){
 function stopApp(){if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
 window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
-const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats']};
-const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés'};
+const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
+const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés',reseaux:'réseaux'};
 const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
 let lastMod={},lastModT=null;
 function whenTxt(ts){const d=new Date(ts),t=todayISO(),k=isoOf(d);return (k===t?'aujourd’hui':k===addDays(t,-1)?'hier':'le '+d.getDate()+' '+MOIS[d.getMonth()])+' à '+timeOf(ts)}
@@ -337,8 +338,9 @@ function render(){
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView};
+  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView,allergenes:allergenesView};
   main.innerHTML=V[route]();
+  if(me.role==='client'){const f=main.querySelector('.s-foot');const sh=socialHTML();if(f&&sh)f.insertAdjacentHTML('afterend',sh)}
   const hd=main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
 }
 
@@ -714,6 +716,8 @@ function parfumForm(p){
     <div class="row2"><label class="field">Prix du quart (€)<input name="prix_quart" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_quart}"></label><label class="field">Prix de l’entier, commande (€)<input name="prix_entier" type="number" step="0.10" min="0" inputmode="decimal" value="${p.prix_entier??''}" placeholder="À définir"></label></div>
     <label class="field">Photo<select name="photo"><option value="">Aucune (couleur)</option>${PHOTOS.map(f=>`<option value="${f}"${p.photo===f?' selected':''}>${esc(f.replace('photos/','').replace('.jpg','').replace(/-/g,' '))}</option>`).join('')}</select></label>
     <div class="row2"><label class="field">Couleur<input name="couleur" type="color" value="${esc(p.couleur)}" style="padding:4px"></label><label class="field">Statut<select name="disponible"><option value="1"${p.disponible?' selected':''}>En vente</option><option value="0"${p.disponible?'':' selected'}>Pas en vente</option></select></label></div>
+    <label class="field">Vente<select name="vente_quart"><option value="1"${p.vente_quart!==false?' selected':''}>Au quart en boutique + entier sur commande</option><option value="0"${p.vente_quart===false?' selected':''}>Flan entier sur commande uniquement</option></select></label>
+    <label class="field">Allergènes en plus de la base (œufs, lait, gluten, amande)<input name="allergenes" value="${esc(p.allergenes||'')}" placeholder="pistache, soja… (vide si rien de plus)"></label>
     <p class="msg err" hidden></p>
     <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="cancelParfum">Annuler</button></div></form>`;
 }
@@ -724,7 +728,8 @@ function parfumsView(){
   ${ui.addParfum?`<section class="card"><h2>Nouveau parfum</h2>${parfumForm(null)}</section>`:''}
   <div class="parfums">${parfums.map(p=>ui.editParfum===p.id?`<div class="parfum"><div class="bandeau" style="background:${esc(p.couleur)}"></div><div class="in">${parfumForm(p)}</div></div>`:`<div class="parfum${p.disponible?'':' off'}">${p.photo?`<img class="pphoto" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`:`<div class="bandeau" style="background:${esc(p.couleur)}"></div>`}<div class="in">
     <div class="envoi-h"><b>${esc(p.nom)}</b><span class="badge ${p.disponible?'b-good':'b-mute'}">${p.disponible?'En vente':'Pas en vente'}</span></div>
-    <span class="meta">Quart ${eur(p.prix_quart)} · entier ${p.prix_entier!=null?eur(p.prix_entier):'<span class="badge b-gold">à définir</span>'}</span>
+    <span class="meta">${p.vente_quart===false?'<span class="badge b-info">Entier sur commande uniquement</span> ':'Quart '+eur(p.prix_quart)+' · '}entier ${p.prix_entier!=null?eur(p.prix_entier):'<span class="badge b-gold">à définir</span>'}</span>
+    <span class="meta">Allergènes : ${esc(allergOf(p))}</span>
     <div class="btnrow" style="margin-top:auto"><button class="btn ghost sm" type="button" data-act="editParfum" data-id="${p.id}">Modifier</button><button class="btn ghost sm" type="button" data-act="toggleParfum" data-id="${p.id}">${p.disponible?'Retirer de la vente':'Remettre en vente'}</button></div>
   </div></div>`).join('')}</div>
   <p class="note">Seuls les parfums « en vente » apparaissent dans la répartition, les réassorts et les envois. En boutique, la vente se fait à la part (prix du quart) ; le prix de l’entier sert aux commandes retirées à Saint-Lazare.</p></div>`;
@@ -1422,6 +1427,28 @@ function profileView(){
 
 /* ================= Étape 6 : site client, clients, contacts, demandes, community manager ================= */
 const SLOGAN='L’art du flan, tout simplement.';
+const IC_IG='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>';
+const IC_FB='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.3H7.4V14h2.7v8z"/></svg>';
+let reseauxList=[];
+const IC_LINK='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>';
+const okUrl=u=>typeof u==='string'&&/^https:\/\/[^\s"'<>]+$/i.test(u);
+const RS=k=>{const r=reseauxList.find(x=>x.cle===k);return r?{nom:r.nom,c:r.couleur}:{nom:k?k.charAt(0).toUpperCase()+k.slice(1):'Autre',c:'#8A8578'}};
+function socialHTML(list){list=list||reseauxList;const a=list.filter(r=>okUrl(r.lien)).map(r=>`<a class="soc" href="${esc(r.lien)}" target="_blank" rel="noopener">${/instagram/i.test(r.cle+r.lien)?IC_IG:/facebook/i.test(r.cle+r.lien)?IC_FB:IC_LINK}<span>${esc(r.nom)}</span></a>`);
+  return a.length?`<div class="socials">${a.join('')}</div>`:''}
+async function loadAuthSocial(){try{const {data}=await sb.from('reseaux').select('*').order('ordre');const el=$('#authSocial');if(el)el.innerHTML=socialHTML(data||[])}catch(e){}}
+const slug=t=>String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
+const ALLERG_BASE='œufs, lait, gluten (blé), amande';
+const allergOf=p=>ALLERG_BASE+(p.allergenes?', '+p.allergenes:'');
+function allergenesView(){
+  const list=parfums.filter(p=>p.disponible).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+  return `<div class="page site"><article class="s-article"><span class="s-kicker">Allergènes</span><h1>Carte des allergènes</h1>
+    <p>Tous nos flans sont élaborés artisanalement et peuvent contenir des <b>traces de gluten, œufs, lait, fruits à coque, arachides, sésame et soja</b>.</p>
+    <section class="card"><h2>Base commune à tous nos flans</h2><p class="sub">Présents systématiquement : œufs, lait, gluten (blé), amandes (poudre d’amande dans la pâte).</p></section>
+    <section class="card"><h2>Par parfum</h2><div class="tbl-wrap"><table><thead><tr><th>Parfum</th><th>Allergènes</th></tr></thead><tbody>
+    ${list.map(p=>`<tr><td><span style="display:flex;gap:8px;align-items:center">${sw(p)}<b>${esc(p.nom)}</b></span></td><td>${esc(ALLERG_BASE)}${p.allergenes?`, <b>${esc(p.allergenes)}</b>`:''}</td></tr>`).join('')}
+    </tbody></table></div><p class="note">En cas d’allergie, demandez conseil en boutique avant de commander.</p></section></article>
+    <p class="s-foot">Le Comptoir du Flan — ${SLOGAN}</p></div>`;
+}
 const SITE='photos/site/';
 
 /* --- Pages du site pour les clients --- */
@@ -1450,7 +1477,8 @@ function nosParfumsView(){
   <div class="head"><div><h1>Nos parfums</h1><p>Les parts se vendent dans toutes nos boutiques. Les flans entiers se commandent en ligne, retrait à ${esc(B?B.nom:'Saint-Lazare')}.</p></div><a class="btn sm" href="#commander">Commander un flan entier</a></div>
   <div class="parfums">${list.map(p=>`<div class="parfum${p.disponible?'':' off'}">${p.photo?`<img class="pphoto" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`:`<div class="bandeau" style="background:${esc(p.couleur||'#E6C15C')}"></div>`}<div class="in">
     <div class="envoi-h"><b>${esc(p.nom)}</b>${p.disponible?'':'<span class="badge b-mute">Pas en ce moment</span>'}</div>
-    <span class="meta">Le quart · <b class="num">${eur(p.prix_quart)}</b></span>${p.prix_entier!=null?`<span class="meta">Flan entier · <b class="num">${eur(p.prix_entier)}</b></span>`:''}</div></div>`).join('')}</div>
+    ${p.vente_quart!==false?`<span class="meta">Le quart · <b class="num">${eur(p.prix_quart)}</b></span>`:'<span class="meta">Uniquement en flan entier, sur commande</span>'}${p.prix_entier!=null?`<span class="meta">Flan entier · <b class="num">${eur(p.prix_entier)}</b></span>`:''}<span class="meta" style="font-size:12.5px">Allergènes : ${esc(allergOf(p))}</span></div></div>`).join('')}</div>
+  <p class="note">Tous nos flans peuvent contenir des traces de fruits à coque, arachides, sésame et soja. <a href="#allergenes" style="color:var(--gold-d)">Carte des allergènes</a></p>
   <p class="s-foot">Fabriqués le matin même · ${SLOGAN}</p></div>`;
 }
 function histoireView(){
@@ -1469,7 +1497,8 @@ function histoireView(){
     'Le Comptoir du Flan, c’est l’adresse incontournable des amateurs de douceur qui recherchent l’excellence, la variété et le plaisir de découvrir de nouvelles saveurs.'];
   const ps=a=>a.map(t=>`<p>${esc(t)}</p>`).join('');
   return `<div class="page site">
-  <article class="s-article"><span class="s-kicker">Notre histoire</span><h1>L’histoire du Comptoir du Flan</h1>${ps(P)}
+  <article class="s-article"><span class="s-kicker">Notre histoire</span><h1>L’histoire du Comptoir du Flan</h1>${ps(P.slice(0,2))}
+    <div class="s-duo"><figure><img src="${SITE}jean-portrait.jpg" alt="Portrait de Jean Gautier souriant, devant ses flans" loading="lazy"><figcaption>Jean Gautier, fondateur et chef pâtissier</figcaption></figure><figure><img src="${SITE}jean-cuisine.jpg" alt="Jean Gautier en cuisine" loading="lazy"><figcaption>En cuisine</figcaption></figure></div>${ps(P.slice(2))}
     <blockquote class="s-quote">« Donner au flan la place qu’il mérite, en faire un dessert d’exception. »</blockquote>${ps(P2)}</article>
   <section class="s-sec"><img src="${SITE}univers.jpg" alt="Parts de flans aux pralinés" loading="lazy"><div class="s-txt"><span class="s-kicker">Notre Maison</span><h2>Le premier Comptoir dédié au flan</h2>${ps(M)}</div></section>
   <section class="card dark" style="gap:6px"><h2 style="color:var(--gold-l)">Fabriqués le matin même</h2><span class="sub">Tous nos flans sont préparés chaque matin : les retraits se font sur les créneaux indiqués pour garantir fraîcheur et qualité.</span>
@@ -1511,7 +1540,7 @@ function demandeFormHTML(pre){
     <div class="row2"><label class="field" id="dSocRow">Société ou établissement<input id="dSoc" autocomplete="organization"></label><label class="field"><span id="dVilleLbl">Ville visée</span><input id="dVille" autocomplete="address-level2"></label></div>
     <label class="field" id="dApportRow">Apport personnel envisagé<select id="dApport"><option value="">Choisir…</option>${APPORTS.map(a=>`<option>${esc(a)}</option>`).join('')}</select></label>
     <label class="field"><span id="dMsgLbl">${esc(DEM_MSG[t])}</span><textarea id="dMsg" rows="5" maxlength="4000"></textarea></label>
-    <label class="check"><input type="checkbox" id="dOk"><span>J’accepte que mes informations soient utilisées par le Comptoir du Flan pour traiter ma demande. Elles sont supprimées au plus tard 2 ans après notre dernier échange.</span></label>
+    <label class="check"><input type="checkbox" id="dOk"><span>J’accepte que mes informations soient utilisées par Le Comptoir du Flan pour traiter ma demande. Elles sont supprimées au plus tard 2 ans après notre dernier échange.</span></label>
     <p class="msg err" id="dErr" hidden></p>
     <button class="btn" type="submit">Envoyer ma demande</button></form>`;
 }
@@ -1629,17 +1658,16 @@ function demandesView(){
 }
 
 /* --- Espace community manager --- */
-const RESEAUX={instagram:['Instagram','#E1306C'],tiktok:['TikTok','#141414'],facebook:['Facebook','#1877F2'],linkedin:['LinkedIn','#0A66C2'],autre:['Autre','#8A8578']};
 const FORMATS={post:'Post',carrousel:'Carrousel',reel:'Reel',story:'Story',video:'Vidéo'};
 const PUB_ST={idee:['Brouillon','b-mute'],a_valider:['À valider','b-gold'],validee:['Validée','b-info'],programmee:['Programmée','b-info'],publiee:['Publiée','b-good']};
 const PUB_STEPS=['idee','a_valider','validee','programmee','publiee'];
 async function loadCmInfos(){cmInfos={loading:true};try{const {data,error}=await sb.rpc('cm_infos');if(error)throw error;cmInfos=data||{top:[]}}catch(e){cmInfos={top:[],err:true}}if(route==='cm')render()}
 function pubForm(p){
-  const isNew=!p;p=p||{jour:ui.cmJour||todayISO(),reseau:'instagram',format:'post',statut:'idee'};const R=isResp(me);
+  const isNew=!p;p=p||{jour:ui.cmJour||todayISO(),reseau:(reseauxList[0]||{}).cle||'instagram',format:'post',statut:'idee'};const R=isResp(me);
   const vis=PHOTOS.concat(Object.values({a:SITE+'hero.jpg',b:SITE+'univers.jpg',c:SITE+'maison.jpg',d:SITE+'tradition.jpg',e:SITE+'experience.jpg'}));
   return `<form class="grid" style="gap:10px" data-pubform="${p.id||'new'}" novalidate>
     <div class="row2"><label class="field">Date<input name="jour" type="date" value="${esc(p.jour)}"></label><label class="field">Heure<input name="heure" type="time" value="${esc(p.heure?String(p.heure).slice(0,5):'')}"></label></div>
-    <div class="row2"><label class="field">Réseau<select name="reseau">${Object.entries(RESEAUX).map(([k,v])=>`<option value="${k}"${k===p.reseau?' selected':''}>${v[0]}</option>`).join('')}</select></label><label class="field">Format<select name="format">${Object.entries(FORMATS).map(([k,v])=>`<option value="${k}"${k===p.format?' selected':''}>${v}</option>`).join('')}</select></label></div>
+    <div class="row2"><label class="field">Réseau<select name="reseau">${reseauxList.map(r=>`<option value="${esc(r.cle)}"${r.cle===p.reseau?' selected':''}>${esc(r.nom)}</option>`).join('')}${p.reseau&&!reseauxList.some(r=>r.cle===p.reseau)?`<option value="${esc(p.reseau)}" selected>${esc(RS(p.reseau).nom)}</option>`:''}</select></label><label class="field">Format<select name="format">${Object.entries(FORMATS).map(([k,v])=>`<option value="${k}"${k===p.format?' selected':''}>${v}</option>`).join('')}</select></label></div>
     <label class="field">Titre (pour l’équipe)<input name="titre" value="${esc(p.titre||'')}" placeholder="Lancement du flan praliné"></label>
     <label class="field">Légende<textarea name="texte" rows="4" placeholder="Le texte publié">${esc(p.texte||'')}</textarea></label>
     <div class="row2"><label class="field">Hashtags<input name="hashtags" value="${esc(p.hashtags||'')}" placeholder="#flan #montpellier"></label><label class="field">Parfum mis en avant<select name="parfum_id"><option value="">Aucun</option>${parfums.map(x=>`<option value="${x.id}"${x.id===p.parfum_id?' selected':''}>${esc(x.nom)}</option>`).join('')}</select></label></div>
@@ -1656,7 +1684,7 @@ function pubCard(p){
   if(p.statut==='validee')acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="programmee" data-id="${p.id}">Marquer programmée</button>`);
   if(p.statut==='validee'||p.statut==='programmee')acts.push(`<button class="btn sm" type="button" data-act="pubSt" data-s="publiee" data-id="${p.id}">Marquer publiée</button>`);
   return `<section class="card" style="gap:8px" id="pub-${p.id}">
-    <div class="envoi-h"><span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="badge" style="background:${RESEAUX[p.reseau][1]};color:#fff">${RESEAUX[p.reseau][0]}</span><span class="badge b-mute">${FORMATS[p.format]}</span><span class="badge ${st[1]}">${st[0]}</span></span><span class="meta">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''}</span></div>
+    <div class="envoi-h"><span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="badge" style="background:${esc(RS(p.reseau).c)};color:#fff">${esc(RS(p.reseau).nom)}</span><span class="badge b-mute">${FORMATS[p.format]}</span><span class="badge ${st[1]}">${st[0]}</span></span><span class="meta">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''}</span></div>
     <div class="steps">${PUB_STEPS.map((s,k)=>{const i=PUB_STEPS.indexOf(p.statut);return `<span class="${k<i?'done':k===i?'now':''}">${PUB_ST[s][0]}</span>`}).join('')}</div>
     ${ui.pubEdit===p.id?pubForm(p):`<h2 style="margin:0">${esc(p.titre)}</h2>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">${vis}<div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px">${p.texte?`<p style="margin:0;white-space:pre-wrap">${esc(p.texte)}</p>`:'<span class="meta">Pas encore de légende.</span>'}${p.hashtags?`<span style="color:var(--info,#2D6A9F);font-size:14px">${esc(p.hashtags)}</span>`:''}${pf?`<span class="chip" style="align-self:flex-start">${sw(pf)}${esc(pf.nom)}</span>`:''}<span class="meta">Par ${esc(au?displayName(au):'Compte supprimé')}</span></div></div>
@@ -1673,7 +1701,7 @@ function cmView(){
   const first=parseISO(m+'-01'),lead=(first.getDay()+6)%7,last=+lastOfMonth(m).slice(8);
   let cells='';for(let i=0;i<lead;i++)cells+='<div></div>';
   for(let n=1;n<=last;n++){const d=m+'-'+pad(n);const ps=inM.filter(p=>p.jour===d).sort((a,b)=>String(a.heure||'').localeCompare(String(b.heure||'')));const fete=calendrier.filter(c=>c.debut<=d&&c.fin>=d&&c.type!=='vacances');
-    cells+=`<div class="agday${d===t?' today':''}${ui.cmJour===d?' sel':''}"><button type="button" class="agn" data-act="cmJour" data-d="${d}" aria-label="Choisir le ${esc(fmtDay(d))}" style="border:0;background:none;cursor:pointer;font:inherit;padding:0;text-align:left">${n}</button>${fete.map(c=>`<span style="font-size:10.5px;color:var(--muted)">${esc(c.libelle)}</span>`).join('')}${ps.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:block;padding:3px 6px;border-radius:6px;font-size:11px;line-height:1.3;background:${RESEAUX[p.reseau][1]};color:#fff;overflow-wrap:anywhere;${p.statut==='idee'?'opacity:.55':''}">${p.heure?hhmm(p.heure)+' · ':''}${esc(p.titre)}</button>`).join('')}</div>`}
+    cells+=`<div class="agday${d===t?' today':''}${ui.cmJour===d?' sel':''}"><button type="button" class="agn" data-act="cmJour" data-d="${d}" aria-label="Choisir le ${esc(fmtDay(d))}" style="border:0;background:none;cursor:pointer;font:inherit;padding:0;text-align:left">${n}</button>${fete.map(c=>`<span style="font-size:10.5px;color:var(--muted)">${esc(c.libelle)}</span>`).join('')}${ps.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:block;padding:3px 6px;border-radius:6px;font-size:11px;line-height:1.3;background:${esc(RS(p.reseau).c)};color:#fff;overflow-wrap:anywhere;${p.statut==='idee'?'opacity:.55':''}">${p.heure?hhmm(p.heure)+' · ':''}${esc(p.titre)}</button>`).join('')}</div>`}
   const aValider=publications.filter(p=>p.statut==='a_valider').sort((a,b)=>a.jour.localeCompare(b.jour));
   const sel=ui.cmSel&&publications.find(p=>p.id===ui.cmSel);
   const pub=inM.filter(p=>p.statut==='publiee'),vues=pub.reduce((a,p)=>a+(p.vues||0),0),eng=pub.reduce((a,p)=>a+(p.likes||0)+(p.commentaires||0)+(p.partages||0),0);
@@ -1695,23 +1723,31 @@ function cmView(){
   </div>
   <div class="grid g21" style="align-items:start">
     <section class="card"><h2>Calendrier éditorial</h2><div class="tbl-wrap"><div class="agrid">${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(h=>`<span class="agh">${h}</span>`).join('')}${cells}</div></div>
-      <div class="chips">${Object.values(RESEAUX).map(v=>`<span class="chip"><span class="sw" style="background:${v[1]}"></span>${v[0]}</span>`).join('')}<span class="chip" style="opacity:.6">Pâle = brouillon</span></div>
+      <div class="chips">${reseauxList.map(r=>`<span class="chip"><span class="sw" style="background:${esc(r.couleur)}"></span>${esc(r.nom)}</span>`).join('')}<span class="chip" style="opacity:.6">Pâle = brouillon</span></div>
       <p class="note">Clique sur un numéro de jour pour y créer une publication, sur une publication pour l’ouvrir. Les fêtes viennent du calendrier de la répartition.</p></section>
     <div class="grid" style="gap:16px">
-      <section class="card"><h2>Cette semaine</h2>${semaine.length?semaine.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--cream)"><span style="min-width:0"><b style="font-size:14px">${esc(p.titre)}</b><small style="display:block;color:var(--muted)">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''} · ${RESEAUX[p.reseau][0]}</small></span><span class="badge ${PUB_ST[p.statut][1]}" style="align-self:center">${PUB_ST[p.statut][0]}</span></button>`).join(''):'<p class="empty">Rien de prévu cette semaine.</p>'}</section>
+      <section class="card"><h2>Cette semaine</h2>${semaine.length?semaine.map(p=>`<button type="button" data-act="cmSel" data-id="${p.id}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--cream)"><span style="min-width:0"><b style="font-size:14px">${esc(p.titre)}</b><small style="display:block;color:var(--muted)">${esc(fmtDay(p.jour))}${p.heure?' · '+hhmm(p.heure):''} · ${esc(RS(p.reseau).nom)}</small></span><span class="badge ${PUB_ST[p.statut][1]}" style="align-self:center">${PUB_ST[p.statut][0]}</span></button>`).join(''):'<p class="empty">Rien de prévu cette semaine.</p>'}</section>
       <section class="card"><h2>Idées tirées des ventes</h2>${top.length?`<p class="sub">Les parfums les plus vendus ces 7 derniers jours :</p><div class="chips">${top.map((x,i)=>`<span class="chip">${x.photo?`<img class="sw ph" src="${esc(x.photo)}" alt="">`:''}${i+1}. ${esc(x.nom)}</span>`).join('')}</div><p class="note">Un post « coulisses de la fabrication » sur le n° 1 avant le week-end peut l’appuyer.</p>`:'<p class="empty">Les idées arrivent quand les boutiques font leurs clôtures.</p>'}
         <p class="note">Le chiffre d’affaires, la paie et les marges ne sont pas visibles depuis cet espace.</p></section>
     </div>
   </div>
   <section class="card"><h2>Abonnés · ${esc(monthLabel(m))}</h2>
     <div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th>Réseau</th><th>Abonnés</th><th>Mois précédent</th><th>Évolution</th><th>Objectif</th></tr></thead><tbody>
-    ${['instagram','tiktok','facebook','linkedin'].map(r=>{const c=st(r,m),pv=st(r,prevM);const dlt=c.abonnes!=null&&pv.abonnes!=null?c.abonnes-pv.abonnes:null;const obj=c.objectif;
-      return `<tr><td><span class="chip"><span class="sw" style="background:${RESEAUX[r][1]}"></span>${RESEAUX[r][0]}</span></td>
-      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="abonnes" data-m="${m}" value="${c.abonnes!=null?c.abonnes:''}" style="width:110px" aria-label="Abonnés ${RESEAUX[r][0]}"></td>
+    ${reseauxList.filter(x=>x.suivi).map(x=>x.cle).map(r=>{const c=st(r,m),pv=st(r,prevM);const dlt=c.abonnes!=null&&pv.abonnes!=null?c.abonnes-pv.abonnes:null;const obj=c.objectif;
+      return `<tr><td><span class="chip"><span class="sw" style="background:${esc(RS(r).c)}"></span>${esc(RS(r).nom)}</span></td>
+      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="abonnes" data-m="${m}" value="${c.abonnes!=null?c.abonnes:''}" style="width:110px" aria-label="Abonnés ${esc(RS(r).nom)}"></td>
       <td class="num">${pv.abonnes!=null?pv.abonnes.toLocaleString('fr-FR'):'—'}</td>
       <td class="num" style="color:${dlt==null?'inherit':dlt>=0?'var(--good)':'var(--bad)'}">${dlt==null?'—':(dlt>=0?'+':'')+dlt.toLocaleString('fr-FR')}</td>
-      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="objectif" data-m="${m}" value="${obj!=null?obj:''}" style="width:110px" aria-label="Objectif ${RESEAUX[r][0]}">${obj&&c.abonnes!=null?` <small class="meta">${Math.round(c.abonnes*100/obj)} %</small>`:''}</td></tr>`}).join('')}
+      <td><input type="number" min="0" inputmode="numeric" data-act="rsSet" data-r="${r}" data-k="objectif" data-m="${m}" value="${obj!=null?obj:''}" style="width:110px" aria-label="Objectif ${esc(RS(r).nom)}">${obj&&c.abonnes!=null?` <small class="meta">${Math.round(c.abonnes*100/obj)} %</small>`:''}</td></tr>`}).join('')}
     </tbody></table></div><p class="note">Note le nombre d’abonnés en début ou fin de mois, toujours au même moment, pour comparer.</p></section>
+  <section class="card"><h2>Nos réseaux</h2><p class="sub">Ajoute, renomme ou supprime un réseau. Les liens s’affichent sur la page de connexion et dans l’espace client.</p>
+    <div class="tbl-wrap"><table style="min-width:720px"><thead><tr><th>Couleur</th><th>Nom</th><th>Lien de la page</th><th>Suivi des abonnés</th><th></th></tr></thead><tbody>
+    ${reseauxList.map(r=>`<tr data-rz="${esc(r.cle)}"><td><input type="color" data-k="couleur" value="${esc(r.couleur)}" aria-label="Couleur" style="width:44px;height:38px;padding:2px;border:1px solid var(--line2);border-radius:8px"></td>
+      <td><input data-k="nom" value="${esc(r.nom)}" aria-label="Nom" class="rz-in"></td><td><input data-k="lien" type="url" value="${esc(r.lien||'')}" placeholder="https://…" aria-label="Lien" class="rz-in" style="width:100%;min-width:240px"></td>
+      <td><input type="checkbox" data-k="suivi"${r.suivi?' checked':''} aria-label="Suivi des abonnés" style="width:20px;height:20px;accent-color:var(--gold)"></td>
+      <td><div class="btnrow" style="flex-wrap:nowrap"><button class="btn sm" type="button" data-act="rzSave" data-id="${esc(r.cle)}">Enregistrer</button><button class="btn ghost sm" type="button" data-act="rzDel" data-id="${esc(r.cle)}">Supprimer</button></div></td></tr>`).join('')}
+    <tr data-rz=""><td><input type="color" data-k="couleur" value="#8A8578" aria-label="Couleur" style="width:44px;height:38px;padding:2px;border:1px solid var(--line2);border-radius:8px"></td><td><input data-k="nom" placeholder="Nouveau réseau (YouTube, Pinterest…)" aria-label="Nom du nouveau réseau" class="rz-in"></td><td><input data-k="lien" type="url" placeholder="https://…" aria-label="Lien" class="rz-in" style="width:100%;min-width:240px"></td><td><input type="checkbox" data-k="suivi" checked aria-label="Suivi des abonnés" style="width:20px;height:20px;accent-color:var(--gold)"></td><td><button class="btn sm" type="button" data-act="rzSave" data-id="">+ Ajouter</button></td></tr>
+    </tbody></table></div><p class="note">Supprimer un réseau ne supprime pas ses publications : elles restent dans le calendrier.</p>${socialHTML()}</section>
   ${(()=>{const autres=inM.filter(p=>p.id!==ui.cmSel&&!(R&&p.statut==='a_valider')).sort((a,b)=>(a.jour+(a.heure||'')).localeCompare(b.jour+(b.heure||'')));return autres.length?`<section class="grid" style="gap:12px"><h2 style="margin:0">Toutes les publications du mois</h2>${autres.map(pubCard).join('')}</section>`:''})()}
   <p class="note">Circuit : brouillon → à valider (envoyé par le community manager) → validée (par un responsable) → programmée → publiée. Si la légende change après validation, la publication repasse « à valider ».</p></div>`;
 }
@@ -1836,6 +1872,13 @@ document.addEventListener('click',async ev=>{
     case 'pubSt':return act(()=>sb.from('publications').update(t.dataset.s==='a_valider'?{statut:'a_valider',commentaire:null}:{statut:t.dataset.s}).eq('id',id),{a_valider:'Envoyé aux responsables',validee:'Publication validée',programmee:'Marquée programmée',publiee:'Marquée publiée : note ses résultats'}[t.dataset.s]);
     case 'pubRetour':ui.pubRetour=id||null;return render();
     case 'pubRetourOk':{const c=($('#prc-'+id)||{}).value||'';if(!c.trim())return toast('Écris ce qu’il faut changer');ui.pubRetour=null;return act(()=>sb.from('publications').update({statut:'idee',commentaire:c.trim()}).eq('id',id),'Renvoyé au community manager')}
+    case 'rzSave':{const tr=t.closest('tr');const g=k=>tr.querySelector(`[data-k="${k}"]`);const nom=g('nom').value.trim(),lien=g('lien').value.trim();
+      if(!nom)return toast('Donne un nom au réseau');if(lien&&!okUrl(lien))return toast('Le lien doit commencer par https://');
+      const row={nom,couleur:g('couleur').value,lien:lien||null,suivi:g('suivi').checked};
+      if(id)return act(()=>sb.from('reseaux').update(row).eq('cle',id),'Réseau enregistré');
+      const cle=slug(nom)||('reseau-'+Date.now());if(reseauxList.some(r=>r.cle===cle))return toast('Ce réseau existe déjà');
+      row.cle=cle;row.ordre=Math.max(0,...reseauxList.map(r=>r.ordre||0))+1;return act(()=>sb.from('reseaux').insert(row),'Réseau ajouté')}
+    case 'rzDel':if(!armed(t,'Confirmer'))return;return act(()=>sb.from('reseaux').delete().eq('cle',id),'Réseau supprimé');
     case 'pubDel':if(!armed(t))return;ui.cmSel=null;return act(()=>sb.from('publications').delete().eq('id',id),'Publication supprimée');
     case 'pinOn':return startPinFlow('create');
     case 'pinChange':return startPinFlow('change');
@@ -2059,7 +2102,7 @@ document.addEventListener('submit',async ev=>{
     const pq=parseFloat(String(d.prix_quart).replace(',','.'));if(!(pq>=0))return fail(err,'Prix du quart invalide.');
     const pe=String(d.prix_entier).trim()===''?null:parseFloat(String(d.prix_entier).replace(',','.'));
     const isNew=f.dataset.parfumform==='new';
-    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1',photo:d.photo||null};
+    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1',photo:d.photo||null,vente_quart:d.vente_quart!=='0',allergenes:(d.allergenes||'').trim()||null};
     if(isNew)row.ordre=(Math.max(0,...parfums.map(p=>p.ordre||0))+1);
     const {error}=isNew?await sb.from('parfums').insert(row):await sb.from('parfums').update(row).eq('id',f.dataset.parfumform);
     if(error)return fail(err,frErr(error));
