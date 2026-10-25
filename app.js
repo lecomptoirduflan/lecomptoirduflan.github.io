@@ -162,7 +162,8 @@ const PARTS=4, DUREE=3; // PARTS : parts d'un flan entier (commandes, recettes)
 const PU=e=>(e&&e.parts_unite)||4; // parts par unité d'envoi : 4 = anciens envois (flans), PP() = plaques (répartition), 1 = parts (réassorts)
 const UNIT_LBL=e=>{const u=PU(e);return u===1?['part','parts']:u===PARTS?['flan','flans']:['plaque','plaques']};
 const qteTxt=(e,n)=>n+' '+(n>1?UNIT_LBL(e)[1]:UNIT_LBL(e)[0]);
-const flansDe=parts=>Math.ceil(parts/PARTS);
+const partsEntier=id=>Math.max(1,+((parfum(id)||{}).parts_entier)||PARTS); // 4 pour un flan, 6 pour un cheesecake
+const flansDe=(parts,id)=>Math.ceil(parts/(id?partsEntier(id):PARTS));
 const lastDay=d=>addDays(d,DUREE-1);
 function takeFrom(lots,q,dayX,mode){
   // mode 'vente' : lots encore vendables, du plus ancien au plus récent ; 'jete' : périmés d'abord ; sinon tout
@@ -570,7 +571,7 @@ function repartitionView(){
   return `<div class="page">
   <div class="head"><div><h1>Répartition du ${esc(fmtDay(target))}</h1><p>Livraison du matin, préparée la veille par le labo. Quantités en plaques (1 plaque = ${PP()} parts).</p></div>${dayNav('Préparé le '+fmtDay(day))}</div>
   ${(()=>{const cs=commandesAll.filter(c=>['nouvelle','confirmee'].includes(c.statut)&&c.retrait_jour===target);const n=cs.reduce((a,c)=>a+cmdFlans(c),0);return n?`<section class="card" style="border-color:var(--gold)"><h2>+ ${n} flan${n>1?'s':''} de commandes clients à retirer le ${esc(fmtDay(target))}</h2><p class="sub">À produire en plus de la répartition (${cs.length} commande${cs.length>1?'s':''}). Détail dans Commandes.</p></section>`:''})()}
-  <section class="card dark"><h2 style="color:var(--gold-l)">Total : ${grand} plaques · ${(()=>{const t={};repLines.forEach(l=>t[l.p]=(t[l.p]||0)+l.parts);return Object.values(t).reduce((x,v)=>x+flansDe(v),0)})()} flans entiers à produire</h2>
+  <section class="card dark"><h2 style="color:var(--gold-l)">Total : ${grand} plaques · ${(()=>{const t={};repLines.forEach(l=>t[l.p]=(t[l.p]||0)+l.parts);return Object.entries(t).reduce((x,[k,v])=>x+flansDe(v,k),0)})()} flans entiers à produire</h2>
     ${tIds.length?`<div class="chips">${tIds.map(id=>{const p=parfum(id)||{};return `<span class="chip" style="background:#2a2a2a;border-color:#3a3a3a;color:#FFF8EC">${sw(p)}${esc(p.nom)} <b>${totals[id]}</b></span>`}).join('')}</div>`:'<p class="sub">Aucune quantité pour l’instant.</p>'}
     <div class="btnrow"><button class="btn" type="button" data-act="repSend" style="background:var(--gold-l);color:var(--ink)">Envoyer au labo</button><button class="btn ghost sm" type="button" data-act="repReset">Revenir aux propositions</button></div>
     <p class="sub">Propositions = ventes prévues (60 % moyenne du même jour + 40 % veille, ajustées météo et calendrier) − stock encore vendable demain. Un flan se vend ${DUREE} jours après sa production.</p>
@@ -601,7 +602,7 @@ function productionView(){
   const todo=act.filter(e=>e.statut==='valide');
   const tot={},rest={};act.forEach(e=>(e.envoi_lignes||[]).forEach(l=>{const q=(l.quantite||0)*PU(e);tot[l.parfum_id]=(tot[l.parfum_id]||0)+q;if(e.statut==='valide')rest[l.parfum_id]=(rest[l.parfum_id]||0)+q}));
   const ids=Object.keys(tot).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
-  const sum=o=>Object.values(o).reduce((a,b)=>a+flansDe(b),0);
+  const sum=o=>Object.entries(o).reduce((a,[k,b])=>a+flansDe(b,k),0);
   const card=e=>`<div class="envoi${e.type==='reassort'?' hot':''}">
     <div class="envoi-h"><span><b>${esc(shopName(e.boutique_id))}</b> ${e.type==='reassort'?'<span class="badge b-bad">Réassort'+(e.urgent?' urgent':'')+'</span>':`<span class="badge b-mute">Livraison ${e.jour===day?'du matin':'de demain matin'}</span>`}</span><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))}</span></div>
     ${chipsOf(e.envoi_lignes)}${e.note?`<span class="meta">${esc(e.note)}</span>`:''}
@@ -619,8 +620,8 @@ function productionView(){
     ${(()=>{const cs=commandesAll.filter(c=>c.statut==='confirmee'&&(c.retrait_jour===day||c.retrait_jour===tmw)).sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure));
       return cs.length?`<section class="card"><h2>Commandes clients à préparer <span class="badge b-info">${cs.length}</span></h2>${cs.map(c=>`<div class="envoi"><div class="envoi-h"><span><b>${esc(c.numero)}</b> · ${esc(c.client_nom)}</span><span class="meta">Retrait ${esc(retraitTxt(c))}</span></div>${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}<div class="btnrow"><button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="prete">Commande prête</button></div></div>`).join('')}</section>`:''})()}
     <section class="card"><h2>Total par parfum</h2>
-      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Flans à produire</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${flansDe(rest[id]||0)}</b> <small class="meta">${rest[id]||0} p.</small></td><td class="num">${flansDe(tot[id])}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
-      <p class="note">En flans entiers (1 flan = ${PARTS} parts), arrondi au flan du dessus. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
+      ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:0"><thead><tr><th>Parfum</th><th>Flans à produire</th><th>Total</th></tr></thead><tbody>${ids.map(id=>{const p=parfum(id)||{};return `<tr><td>${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${flansDe(rest[id]||0,id)}</b> <small class="meta">${rest[id]||0} p.</small></td><td class="num">${flansDe(tot[id],id)}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucun envoi validé.</p>'}
+      <p class="note">En flans entiers (4 parts par flan, 6 par cheesecake), arrondi à l’entier du dessus. La date de production est enregistrée quand tu cliques « C’est prêt » : le flan se vend ${DUREE} jours à partir de cette date.</p>
     </section>
   </div></div>`;
 }
@@ -730,6 +731,7 @@ function parfumForm(p){
     <label class="field">Photo<select name="photo"><option value="">Aucune (couleur)</option>${PHOTOS.map(f=>`<option value="${f}"${p.photo===f?' selected':''}>${esc(f.replace('photos/','').replace('.jpg','').replace(/-/g,' '))}</option>`).join('')}</select></label>
     <div class="row2"><label class="field">Couleur<input name="couleur" type="color" value="${esc(p.couleur)}" style="padding:4px"></label><label class="field">Statut<select name="disponible"><option value="1"${p.disponible?' selected':''}>En vente</option><option value="0"${p.disponible?'':' selected'}>Pas en vente</option></select></label></div>
     <label class="field">Vente<select name="vente_quart"><option value="1"${p.vente_quart!==false?' selected':''}>Au quart en boutique + entier sur commande</option><option value="0"${p.vente_quart===false?' selected':''}>Flan entier sur commande uniquement</option></select></label>
+    <label class="field">Parts dans un entier<input name="parts_entier" type="number" min="1" max="20" inputmode="numeric" value="${p.parts_entier||PARTS}"><small>4 pour un flan, 6 pour un cheesecake</small></label>
     <label class="field">Allergènes en plus de la base (œufs, lait, gluten, amande)<input name="allergenes" value="${esc(p.allergenes||'')}" placeholder="pistache, soja… (vide si rien de plus)"></label>
     <p class="msg err" hidden></p>
     <div class="btnrow"><button class="btn sm" type="submit">Enregistrer</button><button class="btn ghost sm" type="button" data-act="cancelParfum">Annuler</button></div></form>`;
@@ -784,7 +786,7 @@ function laboView(){
 }
 function laboLots(){
   const tmw=addDays(day,1);
-  const need={};envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>need[l.parfum_id]=(need[l.parfum_id]||0)+(l.quantite||0)*PU(e)));Object.keys(need).forEach(k=>need[k]=flansDe(need[k]));
+  const need={};envoisAll.filter(e=>(e.jour===day||e.jour===tmw)&&['valide','pret'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>need[l.parfum_id]=(need[l.parfum_id]||0)+(l.quantite||0)*PU(e)));Object.keys(need).forEach(k=>need[k]=flansDe(need[k],k));
   const todays=lots.filter(l=>l.jour===day);
   const made={};todays.forEach(l=>made[l.parfum_id]=(made[l.parfum_id]||0)+l.quantite);
   const todo=Object.keys(need).map(id=>[id,need[id]-(made[id]||0)]).filter(x=>x[1]>0).sort((a,b)=>((parfum(a[0])||{}).ordre||0)-((parfum(b[0])||{}).ordre||0));
@@ -864,7 +866,7 @@ function coutFlan(pid){
 }
 function margeOf(p){
   const tva=reg('tva_vente',5.5),emb=reg('emballage_part',0);
-  const cf=coutFlan(p.id),ht=(+p.prix_quart)/(1+tva/100),cp=cf.cout/PARTS+emb;
+  const cf=coutFlan(p.id),ht=(+p.prix_quart)/(1+tva/100),cp=cf.cout/partsEntier(p.id)+emb;
   return {cf,ht,cp,marge:ht-cp,taux:ht?(ht-cp)/ht:0};
 }
 function margesView(){
@@ -875,7 +877,7 @@ function margesView(){
   const rows=parfums.slice().sort((a,b)=>(b.disponible-a.disponible)||(a.ordre-b.ordre)).map(p=>({p,m:margeOf(p)}));
   const editor=sel?(()=>{const rs=recettes.filter(r=>r.parfum_id===sel.id);const m=margeOf(sel);const unused=ingredients.filter(i=>!rs.some(r=>r.ingredient_id===i.id));
     return `<section class="card"><div class="envoi-h"><h2 style="display:flex;align-items:center;gap:10px">${sw(sel)} Recette : ${esc(sel.nom)}</h2><button class="btn ghost sm" type="button" data-act="margeSel" data-id="">Fermer</button></div>
-      <p class="sub">Quantités pour <b>1 flan entier</b> (${PARTS} parts), dans l’unité de chaque ingrédient.</p>
+      <p class="sub">Quantités pour <b>1 ${/cheesecake/i.test(sel.nom)?'cheesecake':'flan'} entier</b> (${partsEntier(sel.id)} parts), dans l’unité de chaque ingrédient.</p>
       ${rs.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:420px"><thead><tr><th>Ingrédient</th><th>Quantité / flan</th><th>Prix</th><th>Coût</th><th></th></tr></thead><tbody>${rs.map(r=>{const i=ingredients.find(x=>x.id===r.ingredient_id)||{};return `<tr><td>${esc(i.nom)}</td><td><input type="number" step="0.001" min="0" inputmode="decimal" data-act="recQte" data-p="${sel.id}" data-i="${r.ingredient_id}" value="${+r.quantite}" style="width:90px" aria-label="Quantité de ${esc(i.nom)}"> ${esc(i.unite||'')}</td><td>${i.prix!=null?eur(i.prix)+' / '+esc(i.unite):'<span class="badge b-gold">prix ?</span>'}</td><td class="num">${i.prix!=null?eur((+r.quantite)*(+i.prix)):'–'}</td><td><button class="btn ghost sm" type="button" data-act="recDel" data-p="${sel.id}" data-i="${r.ingredient_id}">Retirer</button></td></tr>`}).join('')}
         <tr class="total"><td>Coût matières / flan</td><td></td><td></td><td class="num">${eur(m.cf.cout)}</td><td></td></tr></tbody></table></div>`:'<p class="empty">Recette vide.</p>'}
       ${unused.length?`<form id="recAdd" data-p="${sel.id}" class="btnrow" novalidate><select class="inline-sel" id="raIng" aria-label="Ingrédient">${unused.map(i=>`<option value="${i.id}">${esc(i.nom)} (${esc(i.unite)})</option>`).join('')}</select><input id="raQte" type="number" step="0.001" min="0" inputmode="decimal" placeholder="Qté / flan" style="width:110px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit" aria-label="Quantité"><button class="btn sm" type="submit">Ajouter</button></form>`:''}
@@ -1780,13 +1782,13 @@ function plaquesTable(lines,titre,sousTitre,editable){
   const shops=boutiques.filter(b=>shopIds.includes(b.id));
   const ids=Object.keys(by).sort((a,b)=>((parfum(a)||{}).ordre||0)-((parfum(b)||{}).ordre||0));
   let totParts=0,totPl=0,totFl=0;const colTot={};
-  const rows=ids.map(id=>{const p=parfum(id)||{nom:'?'};const t=Object.values(by[id]).reduce((a,x)=>a+x,0);const pl=Math.ceil(t/pp);totParts+=t;totPl+=pl;totFl+=flansDe(t);
+  const rows=ids.map(id=>{const p=parfum(id)||{nom:'?'};const t=Object.values(by[id]).reduce((a,x)=>a+x,0);const pl=Math.ceil(t/pp);totParts+=t;totPl+=pl;totFl+=flansDe(t,id);
     shops.forEach(s=>colTot[s.id]=(colTot[s.id]||0)+(by[id][s.id]||0));
-    return `<tr><td>${sw(p)} ${esc(p.nom)}</td>${shops.map(s=>{const v=by[id][s.id];return `<td class="num">${v?`<b>${fmtPl(v/pp)}</b> <small class="meta">${v} p.</small>`:'<span class="meta">·</span>'}</td>`}).join('')}<td class="num"><b>${t}</b></td><td class="num pl"><b>${pl}</b></td><td class="num meta">${pl*pp-t||''}</td><td class="num"><b>${flansDe(t)}</b></td></tr>`}).join('');
+    return `<tr><td>${sw(p)} ${esc(p.nom)}</td>${shops.map(s=>{const v=by[id][s.id];return `<td class="num">${v?`<b>${fmtPl(v/pp)}</b> <small class="meta">${v} p.</small>`:'<span class="meta">·</span>'}</td>`}).join('')}<td class="num"><b>${t}</b></td><td class="num pl"><b>${pl}</b></td><td class="num meta">${pl*pp-t||''}</td><td class="num"><b>${flansDe(t,id)}</b></td></tr>`}).join('');
   return `<section class="card plaques"><div class="envoi-h"><div><h2 style="margin:0">${esc(titre)}</h2><span class="meta">${esc(sousTitre)}</span></div><div class="btnrow noprint">${editable?`<label class="meta">1 plaque = <input type="number" min="1" max="60" data-act="ppSet" value="${pp}" style="width:58px;min-height:34px;border:1px solid var(--line2);border-radius:8px;text-align:center;font:inherit" aria-label="Parts par plaque"> parts</label>`:`<span class="meta">1 plaque = ${pp} parts</span>`}<button class="btn ghost sm" type="button" data-act="print">Imprimer</button></div></div>
     ${ids.length?`<div class="tbl-wrap"><table class="ptable" style="min-width:${360+shops.length*90}px"><thead><tr><th>Parfum</th>${shops.map(s=>`<th class="num">${esc(s.nom)}</th>`).join('')}<th class="num">Total parts</th><th class="num">Plaques</th><th class="num" title="Parts en trop une fois les plaques remplies">En plus</th><th class="num">Flans à produire</th></tr></thead><tbody>${rows}
     <tr class="total"><td>Total</td>${shops.map(s=>`<td class="num">${fmtPl((colTot[s.id]||0)/pp)} <small class="meta">${colTot[s.id]||0} p.</small></td>`).join('')}<td class="num">${totParts}</td><td class="num pl">${totPl}</td><td></td><td class="num">${totFl}</td></tr></tbody></table></div>
-    <p class="note">Dans chaque boutique : nombre de plaques (et de parts). Colonne Plaques = plaques à produire pour le parfum, arrondi à la plaque du dessus ; « En plus » : parts en trop une fois les plaques remplies. Flans à produire = total des parts ÷ ${PARTS}, arrondi au flan du dessus.</p>`:'<p class="empty">Aucune quantité pour l’instant.</p>'}</section>`;
+    <p class="note">Dans chaque boutique : nombre de plaques (et de parts). Colonne Plaques = plaques à produire pour le parfum, arrondi à la plaque du dessus ; « En plus » : parts en trop une fois les plaques remplies. Flans à produire = total des parts ÷ parts d’un entier (4 pour un flan, 6 pour un cheesecake), arrondi à l’entier du dessus.</p>`:'<p class="empty">Aucune quantité pour l’instant.</p>'}</section>`;
 }
 function plaquesFromEnvois(jour){
   const out=[];envoisAll.filter(e=>e.jour===jour&&e.type==='matin'&&!['signale','refuse'].includes(e.statut)).forEach(e=>(e.envoi_lignes||[]).forEach(l=>out.push({b:e.boutique_id,p:l.parfum_id,parts:(l.quantite||0)*PU(e)})));return out;
@@ -2302,7 +2304,7 @@ document.addEventListener('submit',async ev=>{
     const pq=parseFloat(String(d.prix_quart).replace(',','.'));if(!(pq>=0))return fail(err,'Prix du quart invalide.');
     const pe=String(d.prix_entier).trim()===''?null:parseFloat(String(d.prix_entier).replace(',','.'));
     const isNew=f.dataset.parfumform==='new';
-    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1',photo:d.photo||null,vente_quart:d.vente_quart!=='0',allergenes:(d.allergenes||'').trim()||null};
+    const row={nom:d.nom.trim(),prix_quart:pq,prix_entier:isFinite(pe)?pe:null,couleur:d.couleur,disponible:d.disponible==='1',photo:d.photo||null,vente_quart:d.vente_quart!=='0',parts_entier:Math.min(20,Math.max(1,int(d.parts_entier)||PARTS)),allergenes:(d.allergenes||'').trim()||null};
     if(isNew)row.ordre=(Math.max(0,...parfums.map(p=>p.ordre||0))+1);
     const {error}=isNew?await sb.from('parfums').insert(row):await sb.from('parfums').update(row).eq('id',f.dataset.parfumform);
     if(error)return fail(err,frErr(error));
