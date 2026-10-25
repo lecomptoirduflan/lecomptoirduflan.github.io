@@ -380,3 +380,20 @@ td input[type=number]{font:inherit;font-size:15px;border:1px solid var(--line2);
 .vfoot{display:flex;justify-content:space-between;align-items:center;gap:6px;border-top:1px solid var(--cream);padding:6px 8px}
 .vminus{border:1px solid var(--line2);background:#fff;border-radius:8px;min-height:34px;min-width:44px;font:inherit;cursor:pointer}
 .vminus:disabled{opacity:.4;cursor:default}
+
+/* ---------- Pointage par QR code ---------- */
+.b-qr{display:flex;gap:16px;align-items:center;background:#1e1e1e;border:1px solid #333;border-radius:16px;padding:14px}
+.b-qr #bQr{width:190px;height:190px;flex:none;background:#fff;border-radius:10px;padding:6px;display:grid;place-items:center}
+.b-qr #bQr svg{width:100%;height:100%;display:block}
+.b-qr b{display:block;font-family:var(--f-title);font-size:18px;color:#FFF8EC}
+.b-qr span{font-size:14px;color:#BDB6A8;line-height:1.5}
+.qrscan{position:fixed;inset:0;z-index:50;background:rgba(10,10,10,.94);display:grid;place-items:center;padding:20px}
+.qrscan[hidden]{display:none}
+.qrs-in{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;color:#FFF8EC}
+.qrs-in b{font-family:var(--f-title);font-size:24px;color:var(--gold-l)}
+.qrs-in span{color:#BDB6A8}
+.qrs-v{position:relative;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;background:#000}
+.qrs-v video{width:100%;height:100%;object-fit:cover;display:block}
+.qrs-v i{position:absolute;inset:16%;border:3px solid var(--gold-l);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.qrs-in p{min-height:1.4em;margin:0;color:#F2D58A}
+.qrs-in .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}

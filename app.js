@@ -323,12 +323,12 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){ana=null;effetData=null;fidMap={};fidAsked=new Set();maFid=null;matieres=null;hMois=null;notifs=[];postes=[];stockArticles=[];fichiers=null;const bl=$('#bell');if(bl)bl.hidden=true;if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
+function stopApp(){qrScanStop();clearInterval(borneQrT);borneQrT=null;borneQrSvg='';ana=null;effetData=null;fidMap={};fidAsked=new Set();maFid=null;matieres=null;hMois=null;notifs=[];postes=[];stockArticles=[];fichiers=null;const bl=$('#bell');if(bl)bl.hidden=true;if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
 const ROUTES=['analyse','fichiers','notifs','allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
-function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='fichiers')fichiers=null;if(route==='analyse'){ana=null;effetData=null}if(route==='cm')effetData=null;if(route==='labo')matieres=null;if(route==='heures')hMois=null;ui.posteAdd=false;ui.posteEdit=null;ui.artEdit=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
+function readRoute(){let h=(location.hash||'#accueil').slice(1);const qm=h.match(/^pointer=([0-9a-f]{32})$/);if(qm){ui.qrJeton={j:qm[1],at:Date.now()};h='pointage';try{history.replaceState(null,'',location.pathname+'#pointage')}catch(e){}}route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
+window.addEventListener('hashchange',()=>{qrScanStop();readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='fichiers')fichiers=null;if(route==='analyse'){ana=null;effetData=null}if(route==='cm')effetData=null;if(route==='labo')matieres=null;if(route==='heures')hMois=null;ui.posteAdd=false;ui.posteEdit=null;ui.artEdit=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
 const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements','postes','stock_articles'],fichiers:['fichiers'],analyse:['clotures','cloture_lignes'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
@@ -344,7 +344,7 @@ function render(){
   if(!me||!me.actif||me.role==='aucun'){nav.innerHTML='';$('#me').innerHTML='';main.innerHTML=waitView();return}
   document.body.classList.toggle('borne-mode',me.role==='borne'&&route!=='profil');
   if(me.role==='borne'&&route!=='profil'&&borne.step==='sign'&&document.getElementById('bSig'))return;
-  if(me.role==='borne'){nav.innerHTML='';$('#me').innerHTML=`<span class="avatar">B</span><span>Borne</span>`;main.innerHTML=route==='profil'?profileView():borneView();if(borne.step==='sign')setTimeout(sigInit,0);return}
+  if(me.role==='borne'){nav.innerHTML='';$('#me').innerHTML=`<span class="avatar">B</span><span>Borne</span>`;main.innerHTML=route==='profil'?profileView():borneView();ensureBorneQr();if(borne.step==='sign')setTimeout(sigInit,0);return}
   if(me.role==='client'&&!CLIENT_ROUTES.includes(route))route='maison';
   if(!CAN[route]())route=me.role==='client'?'maison':'accueil';
   nav.innerHTML=navItems().map(([k,l])=>`<a href="#${k}"${k===route?' aria-current="page"':''}>${esc(l)}</a>`).join('');
@@ -1010,7 +1010,8 @@ function pointageView(){
   const days=Array.from({length:7},(_,i)=>{const d=addDays(ws,i);const x=workOf(mesPointages.filter(p=>p.jour===d),d<t);return {d,pm:plannedMin(monPlanning.filter(p=>p.jour===d)),wm:x.min+x.live,an:x.an,n:mesPointages.filter(p=>p.jour===d).length}});
   const wkP=days.reduce((a,x)=>a+x.pm,0),wkW=days.reduce((a,x)=>a+x.wm,0);
   return `<div class="page">
-  <div class="head"><div><h1>Mes heures</h1><p>Le pointage se fait sur la <b>borne</b> du labo ou de la boutique, avec ton code personnel.</p></div></div>
+  <div class="head"><div><h1>Mes heures</h1><p>Pointe sur place : scanne le <b>QR code de la borne</b> avec ce téléphone, ou tape ton code sur la borne.</p></div></div>
+  ${qrPointerSection(w.state)}
   <div class="grid g2" style="align-items:start">
     <section class="card" style="gap:14px">
       <div class="banner"><span class="k">${w.state==='in'?'En service':w.state==='pause'?'En pause':w.state==='done'?'Journée terminée':'Pas encore pointé aujourd’hui'}</span><span class="v">${hm(w.min+w.live)} aujourd’hui</span><span class="s">${aff.length?aff.map(a=>esc(lieuLabel(a))+(a.debut?' · '+hhmm(a.debut)+(a.fin?' – '+hhmm(a.fin):''):'')).join(' / '):'Pas d’affectation prévue aujourd’hui'}</span></div>
@@ -1056,7 +1057,8 @@ function borneView(){
       <span role="alert" style="min-height:1.4em;color:#F08A7A;font-size:15px">${esc(borne.err)}</span>
       <div class="b-pad">${['1','2','3','4','5','6','7','8','9','del','0','ok'].map(k=>`<button type="button" data-act="borneKey" data-k="${k}" aria-label="${k==='del'?'Effacer':k==='ok'?'Valider':k}" class="${k==='ok'?'ok':''}"${borne.busy?' disabled':''}>${k==='del'?'⌫':k==='ok'?'OK':k}</button>`).join('')}</div></div>`;
   }
-  return `<div class="borne">${left}<section class="b-right">${right}</section></div>`;
+  const qrBox=`<div class="b-qr"><div id="bQr" aria-label="QR code de pointage">${borneQrSvg||'<span style="color:#8C857A;font-size:14px">QR code…</span>'}</div><div><b>Avec ton téléphone</b><span>Appli → Mes heures → choisis ton action → scanne ce code</span></div></div>`;
+  return `<div class="borne">${borne.step==='pin'?left.replace(/<\/section>$/,qrBox+'</section>'):left}<section class="b-right">${right}</section></div>`;
 }
 let sigStrokes=[];
 function sigInit(){
@@ -1109,7 +1111,7 @@ function dayAnomalies(pts,pl,d,t){
   if(pts.length&&!pl.length)an.push('Pointé sans être au planning');
   if(pl.length&&!pl.some(x=>x.lieu==='bureau')){
     const ok=new Set(pl.map(x=>x.lieu==='boutique'?x.boutique_id:'labo'));
-    const bad=[...new Set(pts.filter(x=>x.source==='borne'&&x.borne_lieu&&!ok.has(x.borne_lieu)).map(x=>x.borne_lieu))];
+    const bad=[...new Set(pts.filter(x=>(x.source==='borne'||x.source==='qr')&&x.borne_lieu&&!ok.has(x.borne_lieu)).map(x=>x.borne_lieu))];
     if(bad.length)an.push('Pointé à '+bad.map(lieuNom).join(', ')+' (prévu : '+[...ok].map(lieuNom).join(', ')+')');
   }
   return {w,an};
@@ -1132,7 +1134,7 @@ function heuresView(){
   const sel=ui.hSel&&prof(ui.hSel.u)?ui.hSel:null;
   const detail=sel?(()=>{const pts=H.pointages.filter(x=>x.user_id===sel.u&&x.jour===sel.d).sort((a,b)=>a.at<b.at?-1:1);const u=prof(sel.u);
     return `<section class="card" style="border-color:var(--gold)"><div class="envoi-h"><h2>${esc(displayName(u))} · ${esc(fmtDay(sel.d))}</h2><button class="btn ghost sm" type="button" data-act="hSel" data-u="">Fermer</button></div>
-      ${pts.length?pts.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${PT_LBL[p.type]} · <b class="num">${timeOf(p.at)}</b> <span class="badge ${p.source==='correction'?'b-gold':'b-mute'}">${p.source==='correction'?'corrigé':p.source==='borne'?'borne · '+esc(lieuNom(p.borne_lieu||'labo')):p.source}</span>${sigSVG(p.signature,34)}${p.note?` <small style="color:var(--muted)">${esc(p.note)}</small>`:''}</span><button class="btn ghost sm" type="button" data-act="ptDel" data-id="${p.id}">Supprimer</button></div>`).join(''):'<p class="empty">Aucun pointage.</p>'}
+      ${pts.length?pts.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${PT_LBL[p.type]} · <b class="num">${timeOf(p.at)}</b> <span class="badge ${p.source==='correction'?'b-gold':'b-mute'}">${p.source==='correction'?'corrigé':p.source==='qr'?'QR · '+esc(lieuNom(p.borne_lieu)):p.source==='borne'?'borne · '+esc(lieuNom(p.borne_lieu||'labo')):p.source}</span>${sigSVG(p.signature,34)}${p.note?` <small style="color:var(--muted)">${esc(p.note)}</small>`:''}</span><button class="btn ghost sm" type="button" data-act="ptDel" data-id="${p.id}">Supprimer</button></div>`).join(''):'<p class="empty">Aucun pointage.</p>'}
       <form id="ptForm" class="btnrow" data-u="${sel.u}" data-d="${sel.d}" novalidate><select class="inline-sel" id="ptType" aria-label="Type">${Object.entries(PT_LBL).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select><input id="ptHeure" type="time" required aria-label="Heure" style="min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 8px;font:inherit"><input id="ptNote" placeholder="Motif de la correction" aria-label="Motif" style="flex:1 1 180px;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit"><button class="btn sm" type="submit">Ajouter</button></form>
       <p class="msg err" id="ptErr" hidden></p>
       ${(()=>{const pl=H.planning.filter(x=>x.user_id===sel.u&&x.jour===sel.d);const {an}=dayAnomalies(pts,pl,sel.d,todayISO());const v=(H.valid||[]).find(x=>x.user_id===sel.u&&x.jour===sel.d);
@@ -2125,6 +2127,65 @@ function heuresMoisSection(){
     <p class="note">Prévu = horaires du planning ; pointé = temps entre arrivée et départ sur la borne, pauses déduites. Le détail jour par jour est dans l’export CSV du mois.</p></section>`;
 }
 
+/* ================= Pointage par QR code ================= */
+const loadScript=(()=>{const c={};return src=>c[src]||(c[src]=new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{delete c[src];ko(new Error('Chargement impossible. Vérifie internet.'))};document.head.appendChild(s)}))})();
+const QRGEN='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',JSQR='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+/* --- Borne : QR code renouvelé toutes les 20 secondes --- */
+let borneQrSvg='',borneQrT=null;
+function ensureBorneQr(){
+  if(!me||me.role!=='borne'||route==='profil'){clearInterval(borneQrT);borneQrT=null;return}
+  if(borneQrT)return;refreshBorneQr();borneQrT=setInterval(refreshBorneQr,20000);
+}
+async function refreshBorneQr(){
+  if(!me||me.role!=='borne'){clearInterval(borneQrT);borneQrT=null;return}
+  try{await loadScript(QRGEN);const {data,error}=await sb.rpc('borne_jeton');if(error)throw error;
+    const q=window.qrcode(0,'M');q.addData(APP_URL+'#pointer='+data.jeton);q.make();
+    borneQrSvg=q.createSvgTag({cellSize:6,margin:2,scalable:true});
+  }catch(e){borneQrSvg=`<span style="color:#F08A7A;font-size:13px">${/borne_jeton/.test(e.message||'')?'Base pas à jour : lance etape8b.sql':'QR code indisponible'}</span>`}
+  const el=document.getElementById('bQr');if(el)el.innerHTML=borneQrSvg;
+}
+/* --- Employé : choisir l'action puis scanner --- */
+function qrPointerSection(state){
+  const sugg=nextActions(state);
+  if(ui.qrOk)return `<section class="card" style="border-color:var(--good);background:var(--good-bg);gap:6px"><h2 style="color:var(--good)">${esc(PT_LBL[ui.qrOk.type])} enregistré${ui.qrOk.type==='arrivee'||ui.qrOk.type==='depart'?'':'e'} à ${esc(ui.qrOk.heure)}</h2><span class="sub">${esc(ui.qrOk.lieu)}</span><button class="btn ghost sm" type="button" data-act="qrOkClose" style="align-self:flex-start">OK</button></section>`;
+  const pend=ui.qrJeton&&Date.now()-ui.qrJeton.at<85000;
+  const btns=(act)=>['arrivee','pause_debut','pause_fin','depart'].map(a=>`<button class="btn ${sugg.includes(a)?'':'ghost'} sm" type="button" data-act="${act}" data-type="${a}">${PT_BTN[a]}</button>`).join('');
+  return `<section class="card qrcard"><h2>Pointer avec le QR code de la borne</h2>
+    ${pend?`<p class="sub">QR code de la borne reçu. Choisis ton action :</p><div class="btnrow">${btns('qrSend')}</div>`:`<p class="sub">Choisis ton action, puis vise le QR code affiché sur la borne du labo ou de la boutique.</p><div class="btnrow">${btns('qrScan')}</div>`}
+  </section>`;
+}
+let qrStream=null,qrLoop=null,qrType=null,qrBusy=false;
+async function qrScanStart(type){
+  qrType=type;qrBusy=false;
+  let ov=document.getElementById('qrScan');if(!ov){ov=document.createElement('div');ov.id='qrScan';ov.className='qrscan';document.body.appendChild(ov)}
+  ov.innerHTML=`<div class="qrs-in"><b>${esc(PT_BTN[type])}</b><span>Vise le QR code de la borne</span><div class="qrs-v"><video id="qrVid" playsinline muted></video><i aria-hidden="true"></i></div><p id="qrMsg" role="status"></p><button class="btn ghost" type="button" data-act="qrStop">Annuler</button></div>`;ov.hidden=false;
+  const msg=m=>{const e=document.getElementById('qrMsg');if(e)e.textContent=m};
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Ton téléphone ne permet pas d’utiliser la caméra ici.');
+    qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    const v=document.getElementById('qrVid');if(!v){qrScanStop();return}v.srcObject=qrStream;await v.play();
+    let det=null;try{if('BarcodeDetector' in window&&(await BarcodeDetector.getSupportedFormats()).includes('qr_code'))det=new BarcodeDetector({formats:['qr_code']})}catch(e){}
+    if(!det)await loadScript(JSQR);
+    const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+    const tick=async()=>{
+      if(!qrStream||qrBusy)return;
+      try{let txt=null;
+        if(det){const r=await det.detect(v);if(r&&r[0])txt=r[0].rawValue}
+        else if(v.videoWidth){const w=Math.min(640,v.videoWidth),h=Math.round(v.videoHeight*w/v.videoWidth);cv.width=w;cv.height=h;cx.drawImage(v,0,0,w,h);const r=window.jsQR(cx.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'dontInvert'});if(r)txt=r.data}
+        if(txt){const m=String(txt).match(/(?:#pointer=)?([0-9a-f]{32})$/);if(m){qrBusy=true;msg('Code lu, enregistrement…');if(await qrPointer(m[1],qrType))return;await new Promise(r=>setTimeout(r,1800));qrBusy=false}else msg('Ce n’est pas le QR code d’une borne.')}
+      }catch(e){}
+      qrLoop=setTimeout(tick,220);
+    };tick();
+  }catch(e){msg(/Permission|NotAllowed/i.test(e.name+e.message)?'Autorise la caméra pour cette appli (réglages du téléphone), puis réessaie.':(e.message||'Caméra indisponible.'))}
+}
+function qrScanStop(){clearTimeout(qrLoop);if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null}const ov=document.getElementById('qrScan');if(ov){ov.hidden=true;ov.innerHTML=''}}
+async function qrPointer(jeton,type){
+  try{const {data,error}=await sb.rpc('pointer_qr',{p_jeton:jeton,p_type:type});if(error)throw error;
+    qrScanStop();ui.qrJeton=null;ui.qrOk={type,heure:data.heure,lieu:data.lieu};if(navigator.vibrate)navigator.vibrate(80);toast(PT_LBL[type]+' enregistré(e) à '+data.heure);reload();render();return true;
+  }catch(e){const m=/pointer_qr/.test(e.message||'')?'Base pas à jour : lance etape8b.sql dans Supabase.':frErr(e);
+    const el=document.getElementById('qrMsg');if(el&&qrStream){el.textContent=m}else{qrScanStop();toast(m);ui.qrJeton=null;render()}return false}
+}
+
 /* ---------- Actions ---------- */
 async function act(fn,okMsg){try{const r=await fn();if(r&&r.error)throw r.error;if(okMsg)toast(okMsg);reload();return true}catch(e){toast(frErr(e));return false}}
 function armed(t,label){if(t.dataset.armed)return true;t.dataset.armed='1';const old=t.textContent;t.textContent=label||'Confirmer ?';setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent=old}},3500);return false}
@@ -2253,6 +2314,10 @@ document.addEventListener('click',async ev=>{
     case 'rzDel':if(!armed(t,'Confirmer'))return;return act(()=>sb.from('reseaux').delete().eq('cle',id),'Réseau supprimé');
     case 'pubDel':if(!armed(t))return;ui.cmSel=null;return act(()=>sb.from('publications').delete().eq('id',id),'Publication supprimée');
     case 'print':return window.print();
+    case 'qrScan':return qrScanStart(t.dataset.type);
+    case 'qrStop':return qrScanStop();
+    case 'qrSend':{if(!ui.qrJeton)return;t.disabled=true;return qrPointer(ui.qrJeton.j,t.dataset.type)}
+    case 'qrOkClose':ui.qrOk=null;return render();
     case 'vente':{const B=t.dataset.b,p=t.dataset.p,d=+t.dataset.d;let c=clotures.find(x=>x.boutique_id===B);if(!c){c={boutique_id:B,jour:day,updated_at:new Date().toISOString(),cloture_lignes:[]};clotures.push(c);cloturesAll.push(c)}
       const ls=c.cloture_lignes||(c.cloture_lignes=[]);let l=ls.find(x=>x.parfum_id===p);if(!l){l={parfum_id:p,quarts_vendus:0};ls.push(l)}l.quarts_vendus=Math.max(0,(l.quarts_vendus||0)+d);render();
       const {error}=await sb.rpc('vendre_part',{p_boutique:B,p_parfum:p,p_delta:d});if(error){toast(/vendre_part/.test(error.message||'')?'Base pas à jour : lance etape8.sql dans Supabase.':frErr(error));reload()}return}
