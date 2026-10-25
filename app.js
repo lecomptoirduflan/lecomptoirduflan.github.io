@@ -58,7 +58,7 @@ const CAN={
   pointage:()=>me.role!=='borne', heures:()=>isResp(me), agenda:()=>me.role!=='borne',
   commandes:()=>isResp(me)||me.role==='vendeur', commander:()=>me.role==='client', mescommandes:()=>me.role==='client',
   clients:()=>isResp(me), contacts:()=>isResp(me), demandes:()=>isResp(me), cm:()=>isResp(me)||me.role==='cm',
-  fichiers:()=>!['client','borne'].includes(me.role), notifs:()=>me.role!=='borne',
+  analyse:()=>isResp(me), fichiers:()=>!['client','borne'].includes(me.role), notifs:()=>me.role!=='borne',
   maison:()=>me.role==='client', nosparfums:()=>me.role==='client', histoire:()=>me.role==='client', infos:()=>me.role==='client', ensemble:()=>me.role==='client', allergenes:()=>me.role==='client'
 };
 const CLIENT_ROUTES=['maison','nosparfums','commander','mescommandes','histoire','infos','allergenes','ensemble','profil','notifs'];
@@ -66,7 +66,7 @@ function navItems(){const l=navItems0();if(me.role!=='client'&&me.role!=='borne'
 function navItems0(){
   if(me.role==='client')return [['maison','Accueil'],['nosparfums','Nos parfums'],['commander','Commander'],['mescommandes','Mes commandes'],['histoire','Notre histoire'],['infos','Infos pratiques'],['allergenes','Allergènes'],['ensemble','Travaillons ensemble'],['profil','Mon profil']];
   if(me.role==='cm')return [['accueil','Accueil'],['pointage','Mes heures'],['cm','Réseaux sociaux'],['planning','Mon planning'],['agenda','Agenda']];
-  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['demandes','Demandes'],['cm','Réseaux sociaux'],['clients','Clients'],['contacts','Contacts'],['equipe','Équipe'],['boutiques','Points de vente']]);
+  if(isResp(me))return [['accueil','Accueil'],['tableau','Tableau de bord'],['analyse','Analyse'],['repartition','Répartition de demain'],['planning','Planning'],['envois','Envois et réassorts'],['commandes','Commandes'],['production','Production'],['labo','Labo · HACCP'],['ventes','Ventes du jour'],['parfums','Parfums'],['marges','Marges']].concat(me.role==='direction'?[['compta','Compta']]:[]).concat([['heures','Heures'],['agenda','Agenda'],['demandes','Demandes'],['cm','Réseaux sociaux'],['clients','Clients'],['contacts','Contacts'],['equipe','Équipe'],['boutiques','Points de vente']]);
   if(me.role==='chef_patissier')return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['repartition','Répartition de demain'],['planning','Mon planning'],['agenda','Agenda']];
   if(isLabo(me))return [['accueil','Accueil'],['pointage','Mes heures'],['production','Production'],['labo','Labo · HACCP'],['planning','Mon planning'],['agenda','Agenda']];
   if(me.role==='vendeur')return [['accueil','Accueil'],['pointage','Mes heures'],['journee','Ma journée'],['commandes','Commandes'],['planning','Mon planning'],['agenda','Agenda'],['boutiques','Points de vente']];
@@ -79,7 +79,7 @@ const T=(name,desc,href,etape,badge)=>({name,desc,href,etape,badge});
 const POLES=[
   {key:'resp_vente',title:'Vente',tiles:[T('Planning de l\'équipe','Qui travaille où, chaque jour','#planning'),T('Ventes du jour','Clôtures des boutiques','#ventes'),T('Points de vente','Adresses, horaires','#boutiques'),T('Commandes clients','Flans entiers, retrait à Saint-Lazare','#commandes',null,'commandes')]},
   {key:'resp_production',title:'Production',tiles:[T('Répartition de demain','Ce que chaque boutique reçoit demain','#repartition'),T('Production du jour','Ce que le labo prépare','#production'),T('Parfums','Catalogue, prix, en vente ou non','#parfums'),T('Recettes et marges','Coût de revient par flan','#marges'),T('Labo · HACCP','Lots, températures, réceptions, stocks','#labo')]},
-  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda'),T('Photos et fichiers','Partagés par l’équipe','#fichiers')]},
+  {key:'*',title:'Pilotage',tiles:[T('Envois et réassorts','Livraisons du matin, réassorts signalés','#envois',null,'signale'),T('Tableau de bord','Vue d\'ensemble','#tableau'),T('Analyse des ventes','Parfums, boutiques, météo, publications','#analyse'),T('Prévisions','Proposition de livraison de demain (météo, calendrier)','#repartition'),T('Agenda','Dates importantes et événements','#agenda'),T('Photos et fichiers','Partagés par l’équipe','#fichiers')]},
   {key:'direction',title:'Admin et compta',tiles:[T('Comptes de l\'équipe','Invitations et rôles','#equipe'),T('Comptabilité','Recettes, dépenses, échéances','#compta'),T('Heures et pointages','Préparation de la paie','#heures',null,'anomalies'),T('Contacts','Équipe, fournisseurs, clients pro','#contacts')]},
   {key:'resp_partenariats',title:'Partenariats et marketing',tiles:[T('Demandes reçues','Franchises, partenariats, pros, candidatures','#demandes',null,'demandes'),T('Réseaux sociaux','Calendrier éditorial, publications à valider','#cm',null,'pubs'),T('Clients inscrits','Comptes clients et commandes','#clients')]}
 ];
@@ -301,6 +301,7 @@ async function loadAll(){
   if(me&&me.role!=='borne'){const rz=await sb.from('reseaux').select('*').order('ordre');reseauxList=rz.data||[]}
   if(me&&(isResp(me)||me.role==='cm')){const [pb,rs]=await Promise.all([sb.from('publications').select('*').gte('jour',addDays(todayISO(),-120)).lte('jour',addDays(todayISO(),240)).order('jour'),sb.from('reseaux_stats').select('*').gte('mois',addDays(todayISO(),-400))]);publications=pb.data||[];reseauxStats=rs.data||[];if(pb.error&&route==='cm')toast('Base pas à jour : lance etape6.sql dans Supabase.')}else{publications=[];reseauxStats=[]}
   if(compta&&route==='compta'&&!compta.loading)loadCompta(compta.mois);
+  fidAsked=new Set();fidMap={};if(me&&me.role==='client')maFid=null;if(route==='labo'&&ui.laboTab==='matieres')matieres=null;
   loaded=true;render();refreshLastMod();if(route==='tableau'&&isResp(me))loadJournal();
 }
 let rT;const reload=()=>{clearTimeout(rT);rT=setTimeout(loadAll,300)};
@@ -322,15 +323,15 @@ async function startApp(session){
   $('#main').innerHTML='<div class="page"><p class="empty">Chargement…</p></div>';
   await loadAll();subscribe();
 }
-function stopApp(){notifs=[];postes=[];stockArticles=[];fichiers=null;const bl=$('#bell');if(bl)bl.hidden=true;if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
+function stopApp(){ana=null;effetData=null;fidMap={};fidAsked=new Set();maFid=null;matieres=null;hMois=null;notifs=[];postes=[];stockArticles=[];fichiers=null;const bl=$('#bell');if(bl)bl.hidden=true;if(channel){sb.removeChannel(channel);channel=null}user=null;me=null;profiles=[];boutiques=[];invitations=[];parfums=[];planning=[];envois=[];clotures=[];envoisAll=[];cloturesAll=[];calendrier=[];lots=[];equipements=[];releves=[];receptions=[];ingredients=[];recettes=[];reglages={};compta=null;mesPointages=[];monPlanning=[];heuresData=null;agData=null;pinPointage=null;lastMod={};journalData=null;commandesAll=[];parametres={};contacts=[];demandes=[];publications=[];reseauxStats=[];clientsData=null;cmInfos=null;ui.demOk=false;loaded=false;locked=false;renderLock()}
 
 /* ---------- Rendu ---------- */
-const ROUTES=['fichiers','notifs','allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
+const ROUTES=['analyse','fichiers','notifs','allergenes','clients','contacts','demandes','cm','maison','nosparfums','histoire','infos','ensemble','commandes','commander','mescommandes','pointage','heures','agenda','labo','marges','compta','accueil','tableau','repartition','planning','envois','production','ventes','parfums','equipe','boutiques','journee','tournee','profil'];
 function readRoute(){const h=(location.hash||'#accueil').slice(1);route=ROUTES.includes(h)?h:(me&&me.role==='client'?'maison':'accueil')}
-window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='fichiers')fichiers=null;ui.posteAdd=false;ui.posteEdit=null;ui.artEdit=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
+window.addEventListener('hashchange',()=>{readRoute();ui.editShop=null;ui.addShop=false;ui.newEnvoi=false;ui.editParfum=null;ui.addParfum=false;ui.margeParfum=null;ui.hSel=null;ui.ctAdd=false;ui.ctEdit=null;ui.cmNew=false;ui.pubEdit=null;ui.demOk=false;if(route==='clients')clientsData=null;if(route==='fichiers')fichiers=null;if(route==='analyse'){ana=null;effetData=null}if(route==='cm')effetData=null;if(route==='labo')matieres=null;if(route==='heures')hMois=null;ui.posteAdd=false;ui.posteEdit=null;ui.artEdit=null;if(route==='cm')cmInfos=null;render();refreshLastMod();if(route==='tableau'&&me&&isResp(me))loadJournal();window.scrollTo({top:0})});
 
 /* --- Dernière modification (journal) --- */
-const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements','postes','stock_articles'],fichiers:['fichiers'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
+const ROUTE_TABLES={commandes:['commandes','commande_lignes','parametres'],accueil:null,tableau:null,repartition:['envois','envoi_lignes','calendrier'],planning:['planning'],envois:['envois','envoi_lignes'],production:['envois','envoi_lignes','lots'],labo:['lots','releves','receptions','equipements','postes','stock_articles'],fichiers:['fichiers'],analyse:['clotures','cloture_lignes'],ventes:['clotures','cloture_lignes'],parfums:['parfums'],marges:['ingredients','recettes','reglages'],compta:['ecritures'],equipe:['profiles','invitations'],boutiques:['boutiques'],journee:['envois','envoi_lignes','clotures','cloture_lignes'],tournee:['envois'],heures:['pointages','heures_validations','reglages'],agenda:['evenements','calendrier'],pointage:['pointages'],profil:['profiles'],clients:['profiles','commandes'],contacts:['contacts','profiles'],demandes:['demandes'],cm:['publications','reseaux_stats','reseaux']};
 const TABLE_LBL={profiles:'comptes',invitations:'invitations',boutiques:'points de vente',parfums:'parfums',planning:'planning',envois:'envois',envoi_lignes:'quantités d’envoi',clotures:'clôtures',cloture_lignes:'clôtures',calendrier:'calendrier',lots:'lots de production',releves:'températures',receptions:'réceptions',equipements:'équipements',ingredients:'ingrédients',recettes:'recettes',reglages:'réglages',ecritures:'comptabilité',pointages:'pointages',heures_validations:'validations d’heures',evenements:'agenda',commandes:'commandes',commande_lignes:'commandes',parametres:'paramètres',contacts:'contacts',demandes:'demandes',publications:'publications',reseaux_stats:'abonnés',reseaux:'réseaux',postes:'postes du labo',stock_articles:'stocks du labo',fichiers:'fichiers'};
 const ACT_LBL={INSERT:'ajout',UPDATE:'modification',DELETE:'suppression'};
 let lastMod={},lastModT=null;
@@ -350,7 +351,8 @@ function render(){
   paintBell();
   $('#me').innerHTML=`<span class="avatar" aria-hidden="true">${esc(initials(me))}</span><span>${esc(displayName(me))}</span>`;
   if(locked&&!pinAction){main.innerHTML='';return}
-  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView,allergenes:allergenesView,fichiers:fichiersView,notifs:notifsView};
+  const V={commandes:commandesView,commander:commanderView,mescommandes:mesCommandesView,pointage:pointageView,heures:heuresView,agenda:agendaView,labo:laboView,marges:margesView,compta:comptaView,accueil:homeView,tableau:dashView,repartition:repartitionView,planning:planningView,envois:envoisView,production:productionView,ventes:ventesView,parfums:parfumsView,equipe:teamView,boutiques:shopsView,journee:journeeView,tournee:tourneeView,profil:profileView,clients:clientsView,contacts:contactsView,demandes:demandesView,cm:cmView,maison:maisonView,nosparfums:nosParfumsView,histoire:histoireView,infos:infosView,ensemble:ensembleView,allergenes:allergenesView,fichiers:fichiersView,notifs:notifsView,analyse:analyseView};
+  V.planning=()=>wrapPage(planningView(),planningExtra());V.heures=()=>wrapPage(heuresView(),isResp(me)?heuresMoisSection():'');V.commandes=()=>wrapPage(commandesView(),fidReglesSection());V.cm=()=>wrapPage(cmView(),effetPostsSection());
   main.innerHTML=V[route]();
   if(me.role==='client'){const f=main.querySelector('.s-foot');const sh=socialHTML();if(f&&sh)f.insertAdjacentHTML('afterend',sh)}
   const hd=route==='notifs'?null:main.querySelector('.page > .head');if(hd){hd.insertAdjacentHTML('afterend','<p class="lastmod" id="lastMod" aria-live="polite"></p>');paintLastMod()}
@@ -456,6 +458,7 @@ function planningView(){
     <section class="card"><h2>${esc(fmtDay(day))}</h2>
       ${today.length?groups.filter(g=>g[1].length).map(([t,list])=>`<div><div class="meta" style="font-weight:700;margin:6px 0">${t}</div>${list.map(p=>{const u=prof(p.user_id);return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--cream);flex-wrap:wrap"><div class="who"><span class="avatar">${esc(initials(u))}</span><span>${esc(displayName(u))}<small>${esc(lieuLabel(p))} · ${p.debut?hhmm(p.debut)+(p.fin?' – '+hhmm(p.fin):''):'horaires à préciser'}${p.note?' · '+esc(p.note):''}</small></span></div><button class="btn ghost sm" type="button" data-act="planDel" data-id="${p.id}">Retirer</button></div>`}).join('')}</div>`).join(''):'<p class="empty">Personne n’est planifié ce jour.</p>'}
       ${today.length?`<div class="btnrow"><button class="btn ghost sm" type="button" data-act="planCopy">Copier ce jour sur le lendemain</button></div>`:''}
+      ${libresDuJour()}
     </section>
     <section class="card"><h2>Ajouter une affectation</h2>
       <form id="planForm" class="grid" style="gap:12px" novalidate>
@@ -651,6 +654,7 @@ function journeeView(){
   ${aff.length>1?`<p class="note">Tu as plusieurs affectations ce jour : l’appli affiche la première (${esc(shopName(B))}).</p>`:''}
   ${enRoute.length?`<section class="card" style="border-color:var(--gold)"><h2>Livraison en route</h2>${enRoute.map(e=>`<div class="envoi"><div class="envoi-h"><b>${e.type==='reassort'?'Réassort':'Livraison du matin'}</b><span class="meta">${qteTxt(e,lineTotal(e.envoi_lignes))} · ${esc(displayName(prof(e.livreur_id)))}</span></div>${chipsOf(e.envoi_lignes)}<button class="btn" type="button" data-act="recu" data-id="${e.id}">J’ai bien reçu</button></div>`).join('')}</section>`:''}
   ${urgent.length?`<section class="card" style="border-color:var(--bad)"><h2>À vendre en premier</h2><div class="chips">${urgent.map(r=>`${r.premier?`<span class="chip">${sw(r.p)}${esc(r.p.nom)} <b>${r.premier} parts</b> · dernier jour</span>`:''}${r.perime?`<span class="chip" style="border-color:var(--bad)">${sw(r.p)}${esc(r.p.nom)} <b>${r.perime} parts</b> · périmées, à jeter</span>`:''}`).join('')}</div><p class="note">Sers toujours les parts les plus anciennes d’abord. Un flan se vend ${DUREE} jours à partir de sa production.</p></section>`:''}
+  ${isToday?venteRapide(rows,B):''}
   <div class="grid g2" style="align-items:start">
     <section class="card"><h2>Signaler un réassort</h2>
       ${isToday?`<form id="reassortForm" class="grid" style="gap:12px" novalidate data-boutique="${B}">
@@ -777,10 +781,10 @@ function lotDest(l){
 /* --- Labo · HACCP --- */
 function laboView(){
   const tab=ui.laboTab||'lots';
-  const tabs=[['lots','Lots de production'],['temp','Températures'],['recep','Réceptions'],['stocks','Postes et stocks']];
-  const body=tab==='lots'?laboLots():tab==='temp'?laboTemps():tab==='stocks'?laboStocks():laboRecep();
+  const tabs=[['lots','Lots de production'],['temp','Températures'],['recep','Réceptions'],['stocks','Postes et stocks'],['matieres','Matières premières']];
+  const body=tab==='lots'?laboLots():tab==='temp'?laboTemps():tab==='stocks'?laboStocks():tab==='matieres'?laboMatieres():laboRecep();
   return `<div class="page">
-  <div class="head"><div><h1>${tab==='stocks'?'Labo · postes et stocks':'Labo · HACCP'}</h1><p>${tab==='stocks'?'Ce qu’il y a dans chaque chambre froide, congélateur, cellule, four, plonge et rangement':'Traçabilité de la production, des températures et des marchandises'}</p></div>${tab==='temp'||tab==='stocks'?'':dayNav()}</div>
+  <div class="head"><div><h1>${tab==='stocks'?'Labo · postes et stocks':tab==='matieres'?'Labo · matières premières':'Labo · HACCP'}</h1><p>${tab==='stocks'?'Ce qu’il y a dans chaque chambre froide, congélateur, cellule, four, plonge et rangement':'Traçabilité de la production, des températures et des marchandises'}</p></div>${tab==='temp'||tab==='stocks'||tab==='matieres'?'':dayNav()}</div>
   <div class="btnrow" role="tablist">${tabs.map(([k,l])=>`<button class="btn sm ${k===tab?'':'ghost'}" type="button" role="tab" aria-selected="${k===tab}" data-act="laboTab" data-t="${k}">${l}</button>`).join('')}</div>
   ${body}</div>`;
 }
@@ -847,6 +851,7 @@ function laboRecep(){
       <datalist id="prodList">${[...new Set(receptions.map(r=>r.produit).concat(ingredients.map(i=>i.nom)))].map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
       <div class="row2"><label class="field">N° de lot fournisseur<input id="reLot"></label><label class="field">DLC / DDM<input id="reDlc" type="date"></label></div>
       <div class="row2"><label class="field">Température à réception (°C)<input id="reTemp" type="number" step="0.1" inputmode="decimal" placeholder="Produits frais"></label><label class="field">Conformité<select id="reOk"><option value="1">Conforme</option><option value="0">Non conforme</option></select></label></div>
+      ${(()=>{if(!matieres)loadMatieres();const L=matieres&&matieres.list||[];return L.length?`<div class="row2"><label class="field">Matière première (ajoute au stock)<select id="reIng"><option value="">Aucune</option>${L.map(m=>`<option value="${m.id}">${esc(m.nom)} (${esc(m.unite)})</option>`).join('')}</select></label><label class="field">Quantité reçue<input id="reQte" type="number" step="any" min="0" inputmode="decimal" placeholder="Dans l’unité de la matière"></label></div>`:''})()}
       <label class="field">Remarque<input id="reNote" placeholder="Emballage abîmé, refusé, avoir demandé…"></label>
       <p class="msg err" id="reErr" hidden></p>
       <button class="btn" type="submit">Enregistrer la réception</button>
@@ -1290,6 +1295,7 @@ function mesCommandesView(){
   const B=boutiqueRetrait();
   return `<div class="page">
   <div class="head"><div><h1>Mes commandes</h1><p>Retrait à ${esc(B?B.nom:'Saint-Lazare')} · du ${(PC().jours||[]).map(j=>ISO_JOURS[j]).join(', ')}, ${hhmm(PC().heure_debut)}–${hhmm(PC().heure_fin)} · paiement au retrait</p></div><a class="btn sm" href="#commander">+ Nouvelle commande</a></div>
+  ${carteFidelite()}
   ${ui.lastCmd?`<section class="card" style="border-color:var(--good);background:var(--good-bg)"><h2>Merci ! Commande ${esc(ui.lastCmd.numero)} envoyée</h2><p class="sub" style="color:var(--good)">La boutique va la confirmer. Tu suis son avancement ici. Paiement au retrait : ${eur(ui.lastCmd.total)}.</p></section>`:''}
   ${list.length?list.map(c=>{const can=['nouvelle','confirmee'].includes(c.statut);return `<div class="envoi">
     <div class="envoi-h"><span><b>Commande ${esc(c.numero)}</b> <span class="badge ${CMD_ST[c.statut][1]}">${CMD_ST[c.statut][0]}</span></span><span class="num" style="font-weight:700">${eur(c.total)}</span></div>
@@ -1307,12 +1313,13 @@ function commandesView(){
   const T={aconfirmer:commandesAll.filter(c=>c.statut==='nouvelle'),avenir:commandesAll.filter(c=>['confirmee','prete'].includes(c.statut)&&c.retrait_jour>=t),jour:commandesAll.filter(c=>c.retrait_jour===day&&c.statut!=='annulee'),historique:commandesAll.filter(c=>['retiree','annulee'].includes(c.statut)||(c.retrait_jour<t&&c.statut!=='prete'))};
   const list=(T[tab]||[]).slice().sort((a,b)=>(a.retrait_jour+a.retrait_heure).localeCompare(b.retrait_jour+b.retrait_heure)*(tab==='historique'?-1:1));
   const tabs=[['aconfirmer','À confirmer'],['avenir','À venir'],['jour','Par jour'],['historique','Terminées']];
+  if(FID().actif)loadFid([...new Set(list.map(c=>c.client_id).filter(Boolean))]);
   const prod={};live.filter(c=>['confirmee','nouvelle'].includes(c.statut)&&(c.retrait_jour===t||c.retrait_jour===addDays(t,1))).forEach(c=>(c.commande_lignes||[]).forEach(l=>prod[l.parfum_id]=(prod[l.parfum_id]||0)+l.quantite));
   const card=c=>{const fin=['retiree','annulee'].includes(c.statut);return `<div class="envoi${c.statut==='nouvelle'?' hot':''}">
     <div class="envoi-h"><span><b>${esc(c.numero)}</b> <span class="badge ${CMD_ST[c.statut][1]}">${CMD_ST[c.statut][0]}</span> <span class="badge b-mute">${c.source==='en_ligne'?'En ligne':'Équipe'}</span></span><span class="num" style="font-weight:700">${eur(c.total)} · ${cmdFlans(c)} flan${cmdFlans(c)>1?'s':''}</span></div>
     <span><b>${esc(c.client_nom)}</b>${c.client_tel?` · <span style="user-select:all">${esc(c.client_tel)}</span>`:''}${c.client_email?` · <span class="meta" style="user-select:all">${esc(c.client_email)}</span>`:''}</span>
     <span class="meta">Retrait <b>${esc(retraitTxt(c))}</b>${c.boutique_id?' · '+esc(shopName(c.boutique_id)):''}</span>
-    ${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}${cmdSteps(c)}
+    ${cmdChips(c)}${c.note?`<span class="meta">« ${esc(c.note)} »</span>`:''}${cmdSteps(c)}${fidChip(c)}
     ${fin?'':`<div class="btnrow">
       ${c.statut==='nouvelle'?`<button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="confirmee">Confirmer</button>`:''}
       ${c.statut==='confirmee'?`<button class="btn sm" type="button" data-act="cmdSt" data-id="${c.id}" data-s="prete">Prête</button>`:''}
@@ -1907,6 +1914,217 @@ async function sysNotif(n){
     const reg=await navigator.serviceWorker.ready;reg.showNotification(n.titre,{body:n.texte||'',icon:'icons/icon-192.png',badge:'icons/icon-192.png',tag:'cdf-'+n.id,data:{url:APP_URL+(n.lien||'#notifs')}})}catch(e){}
 }
 
+/* ================= Étape 8 : analyse, effet des posts, fidélité, matières premières, vente au fil de l'eau, planning ================= */
+const wrapPage=(html,extra)=>extra?html.replace(/<\/div>\s*$/,extra+'</div>'):html;
+const pct=(a,b)=>b?Math.round((a-b)*100/b):null;
+const pctTxt=x=>x==null?'–':(x>0?'+':'')+x+' %';
+const pctCol=x=>x==null?'':x>0?'color:var(--good)':x<0?'color:var(--bad)':'';
+const nf=x=>(Math.round(x*10)/10).toLocaleString('fr-FR');
+function barsSVG(items,opts){
+  opts=opts||{};const h=opts.h||160,w=Math.max(320,items.length*48),max=Math.max(1,...items.map(i=>i.v)),bw=Math.min(36,(w/items.length)*0.62);
+  return `<div class="tbl-wrap"><svg viewBox="0 0 ${w} ${h+34}" width="100%" style="min-width:${Math.min(w,640)}px;max-height:${h+60}px" role="img" aria-label="${esc(opts.label||'Graphique')}">
+    <line x1="0" y1="${h}" x2="${w}" y2="${h}" stroke="var(--line2)"/>
+    ${items.map((it,i)=>{const x=(i+0.5)*(w/items.length),bh=Math.round(it.v/max*(h-22));return `<g><title>${esc(it.t||it.l+' : '+nf(it.v))}</title><rect x="${x-bw/2}" y="${h-bh}" width="${bw}" height="${bh}" rx="4" fill="${it.c||'var(--gold)'}"/><text x="${x}" y="${h-bh-6}" text-anchor="middle" font-size="11" fill="var(--ink)" font-weight="700">${esc(it.vl!=null?it.vl:nf(it.v))}</text><text x="${x}" y="${h+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(it.l)}</text></g>`}).join('')}
+  </svg></div>`;
+}
+
+/* --- Analyse des ventes (responsables) --- */
+let ana=null,meteoHist={},effetData=null;
+async function loadAnalyse(weeks){
+  ana={weeks,loading:true};
+  const to=addDays(todayISO(),-1),from=addDays(to,-weeks*7+1),from2=addDays(from,-weeks*7);
+  const {data,error}=await sb.from('clotures').select('*, cloture_lignes(*)').gte('jour',from2).lte('jour',to).limit(5000);
+  if(!ana||ana.weeks!==weeks)return;
+  ana={weeks,from,to,from2,rows:data||[],err:error?frErr(error):null};
+  sb.rpc('effet_posts',{p_jours:weeks*7}).then(r=>{effetData=r.data||[];if(route==='analyse')render()},()=>{});
+  loadMeteoHist(from,to);
+  if(route==='analyse')render();
+}
+async function loadMeteoHist(from,to){
+  const end=addDays(todayISO(),-6)<to?addDays(todayISO(),-6):to;if(end<from)return;
+  const keys=[...new Set(boutiques.filter(b=>b.actif).map(b=>meteoKey(b.id)).filter(Boolean))];
+  await Promise.all(keys.map(async k=>{const id=k+'|'+from+'|'+end;if(meteoHist[id])return;meteoHist[id]={};
+    try{const [la,lo]=k.split(',');const r=await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${la}&longitude=${lo}&start_date=${from}&end_date=${end}&daily=temperature_2m_max,precipitation_sum&timezone=Europe%2FParis`);
+      const j=await r.json();const o={};(j.daily&&j.daily.time||[]).forEach((d,i)=>o[d]={tmax:j.daily.temperature_2m_max[i],pluie:j.daily.precipitation_sum[i]||0});meteoHist[id]=o}catch(e){}}));
+  if(ana){ana.meteoRange=from+'|'+end}if(route==='analyse')render();
+}
+const meteoJour=(b,d)=>{if(!ana||!ana.meteoRange)return null;const k=meteoKey(b);const m=k&&meteoHist[k+'|'+ana.meteoRange];return m?m[d]||null:null};
+function analyseView(){
+  const W=ui.anaWeeks||8;
+  if(!ana||ana.weeks!==W){loadAnalyse(W);return `<div class="page"><p class="empty">Calcul de l’analyse…</p></div>`}
+  if(ana.loading)return `<div class="page"><p class="empty">Calcul de l’analyse…</p></div>`;
+  const shopF=ui.anaShop||'';
+  const prix=id=>+((parfum(id)||{}).prix_quart||0);
+  const cur=[],prev=[];
+  ana.rows.filter(c=>!shopF||c.boutique_id===shopF).forEach(c=>(c.cloture_lignes||[]).forEach(l=>{const r={j:c.jour,b:c.boutique_id,p:l.parfum_id,v:l.quarts_vendus||0,je:l.quarts_jetes||0,ca:l.quarts_casses||0,d:l.quarts_donnes||0};(c.jour>=ana.from?cur:prev).push(r)}));
+  const sum=(a,f)=>a.reduce((x,r)=>x+f(r),0);
+  const parts=sum(cur,r=>r.v),parts0=sum(prev,r=>r.v),CA=sum(cur,r=>r.v*prix(r.p)),CA0=sum(prev,r=>r.v*prix(r.p));
+  const pertes=sum(cur,r=>r.je+r.ca+r.d);
+  const shopDays=new Set(cur.map(r=>r.b+'|'+r.j));const nSD=shopDays.size||1;
+  // par semaine
+  const wk={};cur.forEach(r=>{const w=weekStart(r.j);wk[w]=(wk[w]||0)+r.v});
+  const weeks=[];for(let w=weekStart(ana.from);w<=ana.to;w=addDays(w,7))weeks.push(w);
+  // parfums
+  const byP={};const add=(o,k,f)=>{o[k]=o[k]||{v:0,ca:0,pe:0,v0:0};f(o[k])};
+  cur.forEach(r=>add(byP,r.p,o=>{o.v+=r.v;o.ca+=r.v*prix(r.p);o.pe+=r.je+r.ca+r.d}));prev.forEach(r=>add(byP,r.p,o=>{o.v0+=r.v}));
+  const pIds=Object.keys(byP).filter(k=>byP[k].v||byP[k].pe).sort((a,b)=>byP[b].v-byP[a].v);
+  // boutiques
+  const byB={};cur.forEach(r=>{const o=byB[r.b]=byB[r.b]||{v:0,ca:0,pe:0,days:new Set()};o.v+=r.v;o.ca+=r.v*prix(r.p);o.pe+=r.je+r.ca+r.d;o.days.add(r.j)});
+  // jour de la semaine (moyenne par boutique-jour)
+  const sd={};cur.forEach(r=>{const k=r.b+'|'+r.j;sd[k]=(sd[k]||0)+r.v});
+  const dowAgg=[0,0,0,0,0,0,0].map(()=>({s:0,n:0}));Object.entries(sd).forEach(([k,v])=>{const d=parseISO(k.split('|')[1]).getDay();dowAgg[d].s+=v;dowAgg[d].n++});
+  const DOW=[1,2,3,4,5,6,0];
+  // météo & calendrier
+  const grp=f=>{const a={o:{s:0,n:0},x:{s:0,n:0}};Object.entries(sd).forEach(([k,v])=>{const [b,d]=k.split('|');const g=f(b,d);if(g==null)return;const t=g?a.o:a.x;t.s+=v;t.n++});return a};
+  const pluie=grp((b,d)=>{const m=meteoJour(b,d);return m?m.pluie>=1:null}),chaud=grp((b,d)=>{const m=meteoJour(b,d);return m?m.tmax>=28:null});
+  const vac=grp((b,d)=>calFor(b,d).some(c=>c.type==='vacances')),fete=grp((b,d)=>calFor(b,d).some(c=>c.type==='ferie'||c.type==='fete'||c.type==='evenement'));
+  const effRow=(t,a,lo,lx)=>{const mo=a.o.n?a.o.s/a.o.n:null,mx=a.x.n?a.x.s/a.x.n:null;const e=mo!=null&&mx?pct(mo,mx):null;return `<tr><td><b>${t}</b></td><td class="num">${mo!=null?nf(mo):'–'} <small class="meta">(${a.o.n} j.)</small></td><td class="num">${mx!=null?nf(mx):'–'} <small class="meta">(${a.x.n} j.)</small></td><td class="num" style="${pctCol(e)}"><b>${pctTxt(e)}</b></td></tr>`};
+  const pertesT={je:sum(cur,r=>r.je),ca:sum(cur,r=>r.ca),d:sum(cur,r=>r.d)};
+  return `<div class="page">
+  <div class="head"><div><h1>Analyse des ventes</h1><p>Du ${esc(fmtDay(ana.from))} au ${esc(fmtDay(ana.to))} · d’après les clôtures des boutiques</p></div>
+    <div class="btnrow"><select class="inline-sel" data-act="anaWeeks" aria-label="Période">${[4,8,12,26].map(n=>`<option value="${n}"${n===W?' selected':''}>${n} dernières semaines</option>`).join('')}</select>
+    <select class="inline-sel" data-act="anaShop" aria-label="Boutique"><option value="">Toutes les boutiques</option>${boutiques.filter(b=>b.actif).map(b=>`<option value="${b.id}"${b.id===shopF?' selected':''}>${esc(b.nom)}</option>`).join('')}</select>
+    <button class="btn ghost sm" type="button" data-act="anaCsv">Exporter (CSV)</button></div></div>
+  ${ana.err?`<p class="msg err">${esc(ana.err)}</p>`:''}
+  ${!cur.length?'<section class="card"><p class="empty">Pas encore de clôtures sur cette période. Les analyses se remplissent au fil des clôtures des boutiques.</p></section>':`
+  <div class="grid g4">
+    <div class="card kpi"><span class="lbl">Parts vendues</span><span class="val num">${parts.toLocaleString('fr-FR')}</span><span class="hint" style="${pctCol(pct(parts,parts0))}">${pctTxt(pct(parts,parts0))} vs période précédente</span></div>
+    <div class="card kpi"><span class="lbl">Chiffre d’affaires TTC</span><span class="val num">${eur(CA)}</span><span class="hint" style="${pctCol(pct(CA,CA0))}">${pctTxt(pct(CA,CA0))} vs période précédente</span></div>
+    <div class="card kpi"><span class="lbl">Parts par boutique et par jour</span><span class="val num">${nf(parts/nSD)}</span><span class="hint">${nSD} journées clôturées</span></div>
+    <div class="card kpi"><span class="lbl">Pertes</span><span class="val num">${pertes.toLocaleString('fr-FR')} parts</span><span class="hint">${parts+pertes?nf(pertes*100/(parts+pertes)):0} % des parts sorties</span></div>
+  </div>
+  <section class="card"><h2>Parts vendues par semaine</h2>${barsSVG(weeks.map(w=>{const d=parseISO(w);return {l:d.getDate()+'/'+(d.getMonth()+1),v:wk[w]||0,t:'Semaine du '+fmtDay(w)+' : '+(wk[w]||0)+' parts'}}),{label:'Parts vendues par semaine'})}</section>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><h2>Parfums</h2><div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th>Parfum</th><th class="num">Parts</th><th class="num">Part du total</th><th class="num">CA</th><th class="num">Évolution</th><th class="num">Pertes</th></tr></thead><tbody>
+      ${pIds.map((id,i)=>{const o=byP[id],p=parfum(id)||{nom:'?'};const e=pct(o.v,o.v0);return `<tr><td>${i<3?'<b>'+(i+1)+'.</b> ':''}${sw(p)} ${esc(p.nom)}</td><td class="num"><b>${o.v}</b></td><td class="num">${parts?nf(o.v*100/parts):0} %</td><td class="num">${eur(o.ca)}</td><td class="num" style="${pctCol(e)}">${pctTxt(e)}</td><td class="num">${o.pe?o.pe+' <small class="meta">('+nf(o.pe*100/(o.v+o.pe))+' %)</small>':'–'}</td></tr>`}).join('')}
+    </tbody></table></div><p class="note">Évolution : comparée aux ${W} semaines d’avant. Pertes : jetées + cassées + données.</p></section>
+    <div class="grid" style="gap:16px">
+      <section class="card"><h2>Jour de la semaine</h2><p class="sub">Parts vendues en moyenne par boutique.</p>${barsSVG(DOW.map(d=>({l:JOURS[d].slice(0,3),v:dowAgg[d].n?dowAgg[d].s/dowAgg[d].n:0,t:JOURS[d]+' : '+(dowAgg[d].n?nf(dowAgg[d].s/dowAgg[d].n):0)+' parts en moyenne ('+dowAgg[d].n+' j.)'})),{h:130,label:'Ventes moyennes par jour de la semaine'})}</section>
+      <section class="card"><h2>Pertes</h2><div class="chips"><span class="chip">Jetées <b>${pertesT.je}</b></span><span class="chip">Cassées <b>${pertesT.ca}</b></span><span class="chip">Données <b>${pertesT.d}</b></span></div><p class="note">Des jetées élevées sur un parfum = trop envoyé : baisse sa quantité dans la répartition.</p></section>
+    </div>
+  </div>
+  ${shopF?'':`<section class="card"><h2>Boutiques</h2><div class="tbl-wrap"><table style="min-width:600px"><thead><tr><th>Boutique</th><th class="num">Jours</th><th class="num">Parts</th><th class="num">Parts / jour</th><th class="num">CA</th><th class="num">CA / jour</th><th class="num">Pertes</th></tr></thead><tbody>
+    ${Object.keys(byB).sort((a,b)=>byB[b].ca-byB[a].ca).map(b=>{const o=byB[b],n=o.days.size||1;return `<tr><td><b>${esc(shopName(b))}</b></td><td class="num">${o.days.size}</td><td class="num">${o.v}</td><td class="num">${nf(o.v/n)}</td><td class="num">${eur(o.ca)}</td><td class="num">${eur(o.ca/n)}</td><td class="num">${o.v+o.pe?nf(o.pe*100/(o.v+o.pe)):0} %</td></tr>`}).join('')}
+  </tbody></table></div></section>`}
+  <section class="card"><h2>Météo, vacances et fêtes</h2><p class="sub">Parts vendues en moyenne par boutique et par jour, selon les conditions.</p>
+    <div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th></th><th class="num">Quand c’est le cas</th><th class="num">Sinon</th><th class="num">Effet</th></tr></thead><tbody>
+    ${effRow('Pluie (1 mm ou plus)',pluie)}${effRow('Chaleur (28 °C ou plus)',chaud)}${effRow('Vacances scolaires',vac)}${effRow('Fériés, fêtes, événements',fete)}
+    </tbody></table></div><p class="note">Météo des jours passés : Open-Meteo (disponible avec quelques jours de décalage). Ces écarts aident à régler les ajustements de la répartition ; ils deviennent fiables avec plusieurs semaines de données.</p></section>
+  ${effetPostsSection()}`}
+  </div>`;
+}
+function effetPostsSection(){
+  if(effetData===null){sb.rpc('effet_posts',{p_jours:(ui.anaWeeks||8)*7}).then(r=>{effetData=r.data||[];render()},()=>{effetData=[]});return ''}
+  const rows=[1,2,3,4,5,6,7].map(d=>effetData.find(x=>x.dow===d)||{dow:d});
+  const tot=rows.reduce((a,r)=>{if(r.avec!=null&&r.sans!=null){a.e+=(+r.avec-+r.sans)/+r.sans*r.n_avec;a.n+=r.n_avec}return a},{e:0,n:0});
+  const glob=tot.n?Math.round(tot.e*100/tot.n):null;
+  const NOMS=['','lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+  return `<section class="card"><h2>Effet des publications sur les ventes</h2>
+    <p class="sub">Ventes totales (toutes boutiques) les jours avec au moins une publication « publiée », comparées aux jours sans publication, au même jour de la semaine.</p>
+    ${effetData.length?`<div class="tbl-wrap"><table style="min-width:480px"><thead><tr><th>Jour</th><th class="num">Avec publication</th><th class="num">Sans</th><th class="num">Écart</th></tr></thead><tbody>
+    ${rows.map(r=>{const e=r.avec!=null&&r.sans?pct(+r.avec,+r.sans):null;return `<tr><td style="text-transform:capitalize">${NOMS[r.dow]}</td><td class="num">${r.avec!=null?nf(+r.avec):'–'} <small class="meta">(${r.n_avec||0} j.)</small></td><td class="num">${r.sans!=null?nf(+r.sans):'–'} <small class="meta">(${r.n_sans||0} j.)</small></td><td class="num" style="${pctCol(e)}"><b>${pctTxt(e)}</b></td></tr>`}).join('')}
+    </tbody></table></div>
+    <p class="note">${glob!=null?`En moyenne, un jour avec publication vend <b style="${pctCol(glob)}">${pctTxt(glob)}</b> par rapport au même jour sans publication. `:''}À lire avec prudence tant qu’il y a peu de jours avec publication (moins de 5 par jour de la semaine) : un écart peut venir du hasard, de la météo ou d’un événement.</p>`:'<p class="empty">Pas encore assez de données (il faut des clôtures et des publications marquées « publiée »).</p>'}</section>`;
+}
+
+/* --- Fidélité --- */
+let fidMap={},fidAsked=new Set(),maFid=null;
+const FID=()=>Object.assign({actif:true,seuil:10,recompense:'1 flan entier offert'},parametres.fidelite||{});
+function loadFid(ids){const miss=ids.filter(i=>i&&!fidAsked.has(i));if(!miss.length)return;miss.forEach(i=>fidAsked.add(i));
+  sb.rpc('fidelite_clients',{p_ids:miss}).then(r=>{if(r.data){Object.assign(fidMap,r.data);if(route==='commandes')render()}},()=>{})}
+function fidChip(c){
+  if(!FID().actif||!c.client_id)return '';const f=fidMap[c.client_id];if(!f)return '';
+  const fin=['retiree','annulee'].includes(c.statut);
+  return `<div class="btnrow"><span class="chip">Fidélité <b>${f.progression}/${f.seuil}</b>${f.disponibles?` · <b style="color:var(--good)">${f.disponibles} récompense${f.disponibles>1?'s':''}</b>`:''}</span>${f.disponibles&&!fin&&!/Fidélité :/.test(c.note||'')?`<button class="btn sm" type="button" data-act="fidUse" data-id="${c.id}">Offrir : ${esc(f.recompense)}</button>`:''}</div>`;
+}
+function carteFidelite(){
+  const F=FID();if(!F.actif)return '';
+  if(maFid===null){maFid=false;sb.rpc('ma_fidelite').then(r=>{maFid=r.data||{tampons:0,progression:0,disponibles:0,seuil:F.seuil,recompense:F.recompense};if(route==='mescommandes')render()},()=>{});return ''}
+  if(!maFid)return '';const f=maFid,reste=f.seuil-f.progression;
+  return `<section class="card fidcard"><div class="envoi-h"><div><h2 style="margin:0">Ma carte de fidélité</h2><span class="sub">1 tampon par flan entier retiré · ${esc(f.recompense)} tous les ${f.seuil} flans</span></div>${f.disponibles?`<span class="badge b-good">${f.disponibles} récompense${f.disponibles>1?'s':''} à utiliser</span>`:''}</div>
+    <div class="stamps">${Array.from({length:f.seuil},(_,i)=>`<span class="stamp${i<f.progression?' on':''}" aria-hidden="true">${i<f.progression?'✓':i+1}</span>`).join('')}</div>
+    <p class="sub" style="margin:0">${f.disponibles?'Dis-le en boutique au moment du retrait : on l’applique à ta commande.':`Encore <b>${reste}</b> flan${reste>1?'s':''} avant : ${esc(f.recompense)}.`}</p></section>`;
+}
+function fidReglesSection(){
+  if(!isResp(me))return '';const F=FID();
+  return `<section class="card"><h2>Carte de fidélité</h2><form id="fidForm" class="grid" style="gap:10px" novalidate>
+    <div class="row2"><label class="field">Flans pour une récompense<input id="fiSeuil" type="number" min="2" max="50" value="${F.seuil}"></label><label class="field">Récompense<input id="fiRec" value="${esc(F.recompense)}" maxlength="80"></label></div>
+    <label class="check" style="font-size:14px"><input type="checkbox" id="fiOn"${F.actif?' checked':''}><span>Carte de fidélité active</span></label>
+    <p class="msg err" id="fiErr" hidden></p><button class="btn sm" type="submit" style="align-self:flex-start">Enregistrer</button></form>
+    <p class="note">1 tampon par flan entier d’une commande retirée (comptes clients uniquement). Quand une récompense est disponible, le bouton « Offrir » apparaît sur la commande du client.</p></section>`;
+}
+
+/* --- Matières premières (labo) --- */
+let matieres=null;
+async function loadMatieres(){matieres={loading:true,list:[]};try{const {data,error}=await sb.rpc('matieres_liste');if(error)throw error;matieres={list:data||[]}}catch(e){matieres={list:[],err:/matieres_liste/.test(e.message||'')?'Base pas à jour : lance etape8.sql dans Supabase.':frErr(e)}}if(route==='labo')render()}
+function laboMatieres(){
+  if(!matieres){loadMatieres();return '<p class="empty">Chargement…</p>'}
+  const L=matieres.list,bas=m=>m.seuil!=null&&+m.stock<=+m.seuil;
+  const jours=m=>+m.conso7j>0?(+m.stock)/(+m.conso7j/7):null;
+  const alerts=L.filter(m=>bas(m)||(jours(m)!=null&&jours(m)<3));
+  return `${matieres.err?`<p class="msg err">${esc(matieres.err)}</p>`:''}
+  ${alerts.length?`<section class="card" style="border-color:var(--bad)"><h2>À commander <span class="badge b-bad">${alerts.length}</span></h2><div class="chips">${alerts.map(m=>`<span class="chip" style="border-color:var(--bad)">${esc(m.nom)} <b>${fmtQ(m.stock)} ${esc(m.unite)}</b>${jours(m)!=null?' · ~'+nf(jours(m))+' j.':''}</span>`).join('')}</div></section>`:''}
+  <section class="card"><h2>Matières premières</h2>
+    ${L.length?`<div class="tbl-wrap"><table style="min-width:680px"><thead><tr><th>Matière</th><th>Stock</th><th>Alerte sous</th><th class="num">Utilisé (7 j.)</th><th class="num">Il reste environ</th><th></th></tr></thead><tbody>
+    ${L.map(m=>{const j=jours(m);return `<tr data-mat="${m.id}"${bas(m)?' style="background:var(--bad-bg)"':''}><td><b>${esc(m.nom)}</b>${m.en_recette?'':' <small class="meta">(dans aucune recette)</small>'}</td>
+      <td><input type="number" step="any" min="0" inputmode="decimal" data-k="stock" value="${+m.stock}" aria-label="Stock de ${esc(m.nom)}" class="rz-in" style="width:96px"> ${esc(m.unite)}</td>
+      <td><input type="number" step="any" min="0" inputmode="decimal" data-k="seuil" value="${m.seuil??''}" placeholder="–" aria-label="Seuil d’alerte" class="rz-in" style="width:86px"></td>
+      <td class="num">${+m.conso7j?fmtQ(m.conso7j)+' '+esc(m.unite):'–'}</td><td class="num">${j!=null?`<b style="${j<3?'color:var(--bad)':''}">${nf(j)} jours</b>`:'–'}</td>
+      <td><button class="btn sm" type="button" data-act="matSave" data-id="${m.id}">Enregistrer</button></td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Aucune matière première. Les responsables les créent dans Recettes et marges.</p>'}
+    <p class="note">Le stock baisse tout seul à chaque lot de production (quantités de la recette × nombre de flans) et monte à chaque réception reliée à une matière. Après un comptage, tape le stock réel et enregistre : c’est noté comme inventaire. Les matières et les recettes se créent dans Recettes et marges (responsables).</p></section>`;
+}
+
+/* --- Vente au fil de la journée (vendeur) --- */
+function venteRapide(rows,B){
+  const items=rows.map(r=>{const v=r.v||{};const reste=r.debut+r.recu-(v.quarts_vendus||0)-(v.quarts_jetes||0)-(v.quarts_casses||0)-(v.quarts_donnes||0);return {r,reste,vendu:v.quarts_vendus||0}}).filter(x=>x.reste>0||x.vendu>0);
+  const tot=items.reduce((a,x)=>a+x.vendu,0);
+  return `<section class="card"><div class="envoi-h"><div><h2 style="margin:0">Vente au fil de la journée</h2><span class="sub">Touche le parfum à chaque part vendue : la clôture se remplit toute seule.</span></div><span class="badge b-good">${tot} part${tot>1?'s':''} vendue${tot>1?'s':''}</span></div>
+    ${items.length?`<div class="vgrid">${items.map(x=>`<div class="vitem${x.reste<=0?' out':''}"><button type="button" class="vbtn" data-act="vente" data-b="${B}" data-p="${x.r.p.id}" data-d="1" aria-label="Une part de ${esc(x.r.p.nom)} vendue"${x.reste<=0?' disabled':''}>${x.r.p.photo?`<img src="${esc(x.r.p.photo)}" alt="">`:`<span class="vsw" style="background:${esc(x.r.p.couleur)}"></span>`}<b>${esc(x.r.p.nom)}</b><span>${x.reste>0?x.reste+' en vitrine':'Épuisé'}</span></button>
+      <div class="vfoot"><span class="num"><b>${x.vendu}</b> vendue${x.vendu>1?'s':''}</span><button type="button" class="vminus" data-act="vente" data-b="${B}" data-p="${x.r.p.id}" data-d="-1" aria-label="Annuler une part de ${esc(x.r.p.nom)}"${x.vendu?'':' disabled'}>−1</button></div></div>`).join('')}</div>`:'<p class="empty">Rien en vitrine pour l’instant : confirme la réception de la livraison.</p>'}
+  </section>`;
+}
+
+/* --- Planning : qui est libre, heures de la semaine --- */
+function planningExtra(){
+  if(!isResp(me))return '';
+  const week=Array.from({length:7},(_,i)=>addDays(day,i));
+  const mins=p=>{if(!p.debut||!p.fin)return 0;const [a,b]=[p.debut,p.fin].map(t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m});return Math.max(0,b-a)};
+  const actives=profiles.filter(p=>p.actif&&!['aucun','borne','client'].includes(p.role));
+  const rows=actives.map(u=>{const pl=planning.filter(p=>p.user_id===u.id&&week.includes(p.jour));return {u,pl,min:pl.reduce((a,p)=>a+mins(p),0),days:new Set(pl.map(p=>p.jour)).size}}).sort((a,b)=>b.min-a.min);
+  return `<section class="card"><h2>Semaine du ${esc(fmtDay(day))}</h2>
+    <div class="tbl-wrap"><table style="min-width:${360+7*60}px"><thead><tr><th>Membre</th>${week.map(d=>`<th class="num">${JOURS[parseISO(d).getDay()].slice(0,3)} ${parseISO(d).getDate()}</th>`).join('')}<th class="num">Heures</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td>${esc(displayName(x.u))} <small class="meta">${esc(roleShort(x.u.role))}</small></td>${week.map(d=>{const a=x.pl.filter(p=>p.jour===d);return `<td class="num" style="font-size:12px">${a.length?a.map(p=>`<span title="${esc(lieuLabel(p))}">${p.lieu==='boutique'?esc((shopName(p.boutique_id)||'').slice(0,8)):esc(lieuLabel(p).slice(0,8))}</span>`).join('<br>'):'<span class="meta">libre</span>'}</td>`}).join('')}<td class="num"><b>${hdec(x.min)}</b></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="btnrow"><button class="btn ghost sm" type="button" data-act="planCopyWeek">Copier ces 7 jours sur les 7 suivants</button></div>
+    <p class="note">« libre » = rien de prévu ce jour-là. La copie n’ajoute pas une affectation déjà présente.</p></section>`;
+}
+function libresDuJour(){
+  const busy=new Set(planning.filter(p=>p.jour===day).map(p=>p.user_id));
+  const libres=profiles.filter(p=>p.actif&&!['aucun','borne','client'].includes(p.role)&&!busy.has(p.id));
+  return `<div><div class="meta" style="font-weight:700;margin:6px 0">Libres ce jour (${libres.length})</div>${libres.length?`<div class="chips">${libres.map(p=>`<span class="chip">${esc(displayName(p))} <small class="meta">${esc(roleShort(p.role))}</small></span>`).join('')}</div>`:'<p class="meta">Tout le monde est planifié.</p>'}</div>`;
+}
+
+/* --- Heures : prévu / pointé du mois par personne --- */
+let hMois=null;
+async function loadHeuresMois(m){
+  hMois={m,loading:true};const from=m+'-01',to=lastOfMonth(m);
+  const [p,pl]=await Promise.all([sb.from('pointages').select('*').gte('jour',from).lte('jour',to),sb.from('planning').select('*').gte('jour',from).lte('jour',to)]);
+  if(!hMois||hMois.m!==m)return;const t=todayISO(),tot={};
+  profiles.filter(u=>!['aucun','borne','client'].includes(u.role)).forEach(u=>{for(let d=from;d<=to;d=addDays(d,1)){const pts=(p.data||[]).filter(x=>x.user_id===u.id&&x.jour===d),pls=(pl.data||[]).filter(x=>x.user_id===u.id&&x.jour===d);if(!pts.length&&!pls.length)continue;
+    const {w,an}=dayAnomalies(pts,pls,d,t);const o=tot[u.id]=tot[u.id]||{P:0,W:0,j:0,an:0};o.P+=plannedMin(pls);o.W+=w.min+w.live;o.j++;if(an.length)o.an++}});
+  hMois={m,tot};if(route==='heures')render();
+}
+function heuresMoisSection(){
+  const m=ui.hMois||monthOf(todayISO());
+  if(!hMois||hMois.m!==m){loadHeuresMois(m);return `<section class="card"><h2>Mois de ${esc(monthLabel(m))}</h2><p class="empty">Calcul…</p></section>`}
+  if(hMois.loading)return `<section class="card"><h2>Mois de ${esc(monthLabel(m))}</h2><p class="empty">Calcul…</p></section>`;
+  const ids=Object.keys(hMois.tot).sort((a,b)=>hMois.tot[b].W-hMois.tot[a].W);
+  return `<section class="card"><div class="envoi-h"><h2 style="margin:0">Prévu et pointé · ${esc(monthLabel(m))}</h2><div class="daynav"><button class="iconbtn" type="button" data-act="hMois" data-d="-1" aria-label="Mois précédent">‹</button><button class="iconbtn" type="button" data-act="hMois" data-d="1" aria-label="Mois suivant">›</button></div></div>
+    ${ids.length?`<div class="tbl-wrap"><table style="min-width:560px"><thead><tr><th>Membre</th><th class="num">Jours</th><th class="num">Prévu</th><th class="num">Pointé</th><th class="num">Écart</th><th class="num">Jours avec anomalie</th></tr></thead><tbody>
+    ${ids.map(id=>{const o=hMois.tot[id],u=prof(id);const e=o.W-o.P;return `<tr><td>${esc(u?displayName(u):'?')} <small class="meta">${esc(u?roleShort(u.role):'')}</small></td><td class="num">${o.j}</td><td class="num">${hdec(o.P)} h</td><td class="num"><b>${hdec(o.W)} h</b></td><td class="num" style="${Math.abs(e)>=60?(e>0?'color:var(--good)':'color:var(--bad)'):''}">${e>0?'+':''}${hdec(e)} h</td><td class="num">${o.an?`<span class="badge b-gold">${o.an}</span>`:'–'}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="empty">Rien de prévu ni de pointé ce mois-ci.</p>'}
+    <p class="note">Prévu = horaires du planning ; pointé = temps entre arrivée et départ sur la borne, pauses déduites. Le détail jour par jour est dans l’export CSV du mois.</p></section>`;
+}
+
 /* ---------- Actions ---------- */
 async function act(fn,okMsg){try{const r=await fn();if(r&&r.error)throw r.error;if(okMsg)toast(okMsg);reload();return true}catch(e){toast(frErr(e));return false}}
 function armed(t,label){if(t.dataset.armed)return true;t.dataset.armed='1';const old=t.textContent;t.textContent=label||'Confirmer ?';setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent=old}},3500);return false}
@@ -2035,6 +2253,20 @@ document.addEventListener('click',async ev=>{
     case 'rzDel':if(!armed(t,'Confirmer'))return;return act(()=>sb.from('reseaux').delete().eq('cle',id),'Réseau supprimé');
     case 'pubDel':if(!armed(t))return;ui.cmSel=null;return act(()=>sb.from('publications').delete().eq('id',id),'Publication supprimée');
     case 'print':return window.print();
+    case 'vente':{const B=t.dataset.b,p=t.dataset.p,d=+t.dataset.d;let c=clotures.find(x=>x.boutique_id===B);if(!c){c={boutique_id:B,jour:day,updated_at:new Date().toISOString(),cloture_lignes:[]};clotures.push(c);cloturesAll.push(c)}
+      const ls=c.cloture_lignes||(c.cloture_lignes=[]);let l=ls.find(x=>x.parfum_id===p);if(!l){l={parfum_id:p,quarts_vendus:0};ls.push(l)}l.quarts_vendus=Math.max(0,(l.quarts_vendus||0)+d);render();
+      const {error}=await sb.rpc('vendre_part',{p_boutique:B,p_parfum:p,p_delta:d});if(error){toast(/vendre_part/.test(error.message||'')?'Base pas à jour : lance etape8.sql dans Supabase.':frErr(error));reload()}return}
+    case 'planCopyWeek':{if(!armed(t,'Confirmer la copie'))return;t.disabled=true;try{const {data:ex,error:e1}=await sb.from('planning').select('*').gte('jour',addDays(day,7)).lte('jour',addDays(day,13));if(e1)throw e1;
+      const rows=planning.filter(p=>p.jour>=day&&p.jour<=addDays(day,6)).map(x=>({jour:addDays(x.jour,7),user_id:x.user_id,lieu:x.lieu,boutique_id:x.boutique_id,debut:x.debut,fin:x.fin,note:x.note})).filter(r=>!(ex||[]).some(e=>e.jour===r.jour&&e.user_id===r.user_id&&e.lieu===r.lieu&&(e.boutique_id||null)===(r.boutique_id||null)));
+      if(!rows.length){t.disabled=false;return toast('Les 7 jours suivants ont déjà ces affectations')}const {error}=await sb.from('planning').insert(rows);if(error)throw error;toast(rows.length+' affectation(s) copiée(s) à partir du '+fmtDay(addDays(day,7)));reload()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'hMois':{const [y,mo]=(ui.hMois||monthOf(todayISO())).split('-').map(Number);ui.hMois=isoOf(new Date(y,mo-1+(+t.dataset.d),1)).slice(0,7);hMois=null;return render()}
+    case 'anaCsv':{if(!ana||!ana.rows)return;const pr=id=>+((parfum(id)||{}).prix_quart||0);const out=[['Jour','Boutique','Parfum','Vendues','Jetées','Cassées','Données','CA TTC']];
+      ana.rows.filter(c=>c.jour>=ana.from&&(!ui.anaShop||c.boutique_id===ui.anaShop)).sort((a,b)=>a.jour.localeCompare(b.jour)).forEach(c=>(c.cloture_lignes||[]).forEach(l=>out.push([c.jour,shopName(c.boutique_id),(parfum(l.parfum_id)||{}).nom||'',l.quarts_vendus||0,l.quarts_jetes||0,l.quarts_casses||0,l.quarts_donnes||0,String(((l.quarts_vendus||0)*pr(l.parfum_id)).toFixed(2)).replace('.',',')])));
+      return csvDownload(out,'ventes-'+ana.from+'-au-'+ana.to+'.csv')}
+    case 'fidUse':{if(!armed(t,'Confirmer'))return;t.disabled=true;try{const {error}=await sb.rpc('utiliser_fidelite',{p_commande:id});if(error)throw error;toast('Récompense appliquée à la commande');reload()}catch(e){t.disabled=false;toast(frErr(e))}return}
+    case 'matSave':{const tr=t.closest('tr');const m=(matieres&&matieres.list||[]).find(x=>x.id===id);if(!m)return;const sv=tr.querySelector('[data-k="stock"]').value,se=tr.querySelector('[data-k="seuil"]').value;
+      const st=parseFloat(String(sv).replace(',','.')),sl=se===''?null:parseFloat(String(se).replace(',','.'));if(!(st>=0))return toast('Stock invalide');t.disabled=true;
+      const {error}=await sb.rpc('regler_matiere',{p_ing:id,p_stock:st!==+m.stock?st:null,p_seuil:isFinite(sl)?sl:null});t.disabled=false;if(error)return toast(frErr(error));toast('Enregistré');return loadMatieres()}
     case 'posteAdd':ui.posteAdd=true;ui.posteEdit=null;return render();
     case 'posteEdit':ui.posteEdit=id;ui.posteAdd=false;return render();
     case 'posteCancel':ui.posteAdd=false;ui.posteEdit=null;return render();
@@ -2090,6 +2322,8 @@ document.addEventListener('change',ev=>{
   if(a==='setRole')act(()=>sb.from('profiles').update({role:s.value}).eq('id',id),'Rôle mis à jour');
   if(a==='setBorneLieu')act(()=>sb.from('profiles').update({boutique_id:s.value||null}).eq('id',id),'Lieu de la borne mis à jour');
   if(a==='setStatut')act(()=>sb.from('envois').update({statut:s.value}).eq('id',id),'Statut mis à jour');
+  if(a==='anaWeeks'){ui.anaWeeks=+s.value;ana=null;effetData=null;return render()}
+  if(a==='anaShop'){ui.anaShop=s.value;return render()}
   if(a==='demStatut')act(()=>sb.from('demandes').update({statut:s.value}).eq('id',id),'Statut mis à jour');
   if(a==='demSuivi')act(()=>sb.from('demandes').update({suivi_par:s.value||null}).eq('id',id),'Suivi mis à jour');
   if(a==='setLivreur')act(()=>sb.from('envois').update({livreur_id:s.value||null}).eq('id',id),'Livreur mis à jour');
@@ -2214,7 +2448,7 @@ document.addEventListener('submit',async ev=>{
   if(f.id==='recForm'){
     const four=$('#reFour').value.trim(),prod=$('#reProd').value.trim();if(!four||!prod)return fail('#reErr','Indique le fournisseur et le produit.');
     const t=$('#reTemp').value===''?null:parseFloat(String($('#reTemp').value).replace(',','.'));
-    const {error}=await sb.from('receptions').insert({fournisseur:four,produit:prod,lot_fournisseur:$('#reLot').value.trim()||null,dlc:$('#reDlc').value||null,temperature:isFinite(t)?t:null,conforme:$('#reOk').value==='1',note:$('#reNote').value.trim()||null});
+    const {error}=await sb.from('receptions').insert({fournisseur:four,produit:prod,lot_fournisseur:$('#reLot').value.trim()||null,dlc:$('#reDlc').value||null,temperature:isFinite(t)?t:null,conforme:$('#reOk').value==='1',note:$('#reNote').value.trim()||null,...(($('#reIng')||{}).value&&parseFloat(String(($('#reQte')||{}).value||'').replace(',','.'))>0?{ingredient_id:$('#reIng').value,quantite:parseFloat(String($('#reQte').value).replace(',','.'))}:{})});
     if(error)return fail('#reErr',frErr(error));toast('Réception enregistrée');reload();return;
   }
   if(f.id==='ingForm'){
@@ -2241,6 +2475,8 @@ document.addEventListener('submit',async ev=>{
     rep.target=null;toast('Ajouté au calendrier');reload();return;
   }
   if(f.id==='upForm')return envoyerFichiers(f,btn);
+  if(f.id==='fidForm'){const se=int($('#fiSeuil').value),rec=$('#fiRec').value.trim();if(se<2)return fail('#fiErr','Au moins 2 flans.');if(!rec)return fail('#fiErr','Indique la récompense.');
+    const {error}=await sb.from('parametres').upsert({cle:'fidelite',valeur:{seuil:se,recompense:rec,actif:$('#fiOn').checked}});if(error)return fail('#fiErr',frErr(error));toast('Carte de fidélité enregistrée');reload();if(btn)btn.disabled=false;return}
   if(f.id==='mailForm'){
     const from=$('#mlFrom').value.trim(),url=$('#mlUrl').value.trim();
     if(!/<[^<>\s]+@[^<>\s]+\.[^<>\s]+>$|^[^<>\s]+@[^<>\s]+\.[^<>\s]+$/.test(from))return fail('#mlErr','Expéditeur : « Nom <adresse@domaine.fr> » ou une adresse seule.');

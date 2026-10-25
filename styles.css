@@ -361,3 +361,22 @@ td input[type=number]{font:inherit;font-size:15px;border:1px solid var(--line2);
 .fprev img,.fprev video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .f-ic{font-family:var(--f-title);font-weight:700;font-size:22px;color:var(--gold-d);letter-spacing:.06em}
 @media print{.top,.nav,.noprint,.lastmod,.bell,button,.btn{display:none!important}body{background:#fff}.page>*:not(.plaques){display:none!important}.plaques{border:0}.page{padding:0}}
+
+/* ---------- Étape 8 ---------- */
+.stamps{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:8px;max-width:520px}
+.stamp{aspect-ratio:1;border-radius:999px;border:2px dashed var(--line2);display:grid;place-items:center;font-family:var(--f-title);font-weight:700;color:var(--muted);font-size:14px}
+.stamp.on{border:2px solid var(--gold);background:var(--gold-bg);color:var(--gold-d);font-size:18px}
+.fidcard{background:linear-gradient(135deg,#fff 60%,var(--gold-bg))}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px}
+.vitem{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.vitem.out{opacity:.55}
+.vbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:0 0 8px;text-align:center;-webkit-tap-highlight-color:transparent}
+.vbtn img,.vbtn .vsw{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.vbtn b{font-size:14px;padding:6px 6px 0;color:var(--ink)}
+.vbtn span:last-child{font-size:12.5px;color:var(--muted)}
+.vbtn:active{transform:scale(.97)}
+.vbtn:focus-visible{outline:2px solid var(--gold-d);outline-offset:-2px}
+.vbtn:disabled{cursor:default}
+.vfoot{display:flex;justify-content:space-between;align-items:center;gap:6px;border-top:1px solid var(--cream);padding:6px 8px}
+.vminus{border:1px solid var(--line2);background:#fff;border-radius:8px;min-height:34px;min-width:44px;font:inherit;cursor:pointer}
+.vminus:disabled{opacity:.4;cursor:default}
